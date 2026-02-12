@@ -7,7 +7,7 @@ import { MessageSquareDashed, Send, Bot, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Home() {
-  const { currentSessionId, sessions, messages, sendMessage } = useAppStore();
+  const { currentSessionId, sessions, messages, sendMessage, sendMessageStream } = useAppStore();
   const currentSession = sessions.find(s => s.id === currentSessionId);
 
   // 本地状态：输入框内容
@@ -24,7 +24,8 @@ export default function Home() {
 
   const handleSend = () => {
     if (!inputContent.trim()) return;
-    sendMessage(inputContent);
+    // sendMessage(inputContent);
+    sendMessageStream(inputContent); // <--- 改用流式方法
     setInputContent(""); // 清空输入框
   };
 

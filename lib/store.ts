@@ -21,6 +21,7 @@ interface AppState {
     sendMessage: (content: string) => Promise<void>;     // 新增
     fetchCategories: () => Promise<void>; // 新增动作
     setCategoryFilter: (id: number | null) => void; // 新增动作
+    sendMessageStream: (content: string) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -139,5 +140,89 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ activeCategoryId: id });
         // 切换分类时，重新加载会话列表
         get().fetchSessions(undefined, id || undefined);
+    },
+
+    sendMessageStream: async (content) => {
+        const { currentSessionId, messages } = get();
+        if (!currentSessionId) return;
+
+        // 1. 乐观更新：用户消息立即上屏
+        const tempUserMsg: Message = {
+            id: Date.now().toString(),
+            role: 'user',
+            content: content,
+            created_at: new Date().toISOString()
+        };
+
+        // 2. 乐观更新：预置一个空的 AI 消息占位符
+        const tempAiMsgId = (Date.now() + 1).toString();
+        const tempAiMsg: Message = {
+            id: tempAiMsgId,
+            role: 'assistant',
+            content: '', // 初始为空，稍后填充
+            created_at: new Date().toISOString()
+        };
+
+        set({ messages: [...messages, tempUserMsg, tempAiMsg] });
+
+        try {
+            // 3. 使用原生 fetch 发起流式请求
+            // 注意：这里需要完整的 URL，因为 fetch 不像 axios 自动走 base URL 配置
+            // 但因为我们配置了 next.config.ts 的 proxy，所以可以直接写 /api/...
+            const response = await fetch('/api/chat/messages/stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: currentSessionId,
+                    content: content
+                })
+            });
+
+            if (!response.ok || !response.body) throw new Error("Stream Error");
+
+            // 4. 读取流
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let aiContent = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                // 解析 SSE 格式: "data: Hello\n\ndata: World\n\n"
+                const lines = chunk.split('\n\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6); // 去掉 "data: "
+                        if (data === '[DONE]') break;
+
+                        aiContent += data;
+
+                        // 5. 实时更新 Store 中的最后一条消息 (AI 消息)
+                        set((state) => {
+                            const newMessages = [...state.messages];
+                            const lastMsgIndex = newMessages.findIndex(m => m.id === tempAiMsgId);
+                            if (lastMsgIndex !== -1) {
+                                newMessages[lastMsgIndex] = {
+                                    ...newMessages[lastMsgIndex],
+                                    content: aiContent
+                                };
+                            }
+                            return { messages: newMessages };
+                        });
+                    }
+                }
+            }
+
+            // 流结束，刷新会话列表(更新时间)
+            get().fetchSessions();
+
+        } catch (error) {
+            console.error("流式发送失败", error);
+            // 生产环境应该在这里处理错误回滚
+        }
     }
+
 }));
