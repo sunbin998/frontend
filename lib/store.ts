@@ -1,36 +1,41 @@
 // frontend/lib/store.ts
 import { create } from 'zustand';
 import api from './api';
-import { Session, Category, Message } from './types';
+import { Session, Category, Message, DocumentInfo } from './types';
 
 interface AppState {
     // 数据状态
     sessions: Session[];
     categories: Category[];
-    activeCategoryId: number | null; // 新增：当前选中的分类过滤器
+    activeCategoryId: number | null;
     messages: Message[];
     currentSessionId: string | null;
     isLoading: boolean;
+    documents: DocumentInfo[];
 
     // 动作 (Actions)
     fetchSessions: (keyword?: string, categoryId?: number) => Promise<void>;
     createSession: (title?: string) => Promise<void>;
     selectSession: (id: string) => void;
     deleteSession: (id: string) => Promise<void>;
-    fetchMessages: (sessionId: string) => Promise<void>; // 新增
-    sendMessage: (content: string) => Promise<void>;     // 新增
-    fetchCategories: () => Promise<void>; // 新增动作
-    setCategoryFilter: (id: number | null) => void; // 新增动作
+    fetchMessages: (sessionId: string) => Promise<void>;
+    sendMessage: (content: string) => Promise<void>;
+    fetchCategories: () => Promise<void>;
+    setCategoryFilter: (id: number | null) => void;
     sendMessageStream: (content: string) => Promise<void>;
+    fetchDocuments: () => Promise<void>;
+    uploadDocument: (file: File) => Promise<void>;
+    deleteDocument: (filename: string) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
     sessions: [],
-    categories: [], // 暂时留空，后续实现分类 API 后再补
+    categories: [],
     activeCategoryId: null,
     messages: [],
     currentSessionId: null,
     isLoading: false,
+    documents: [],
 
     fetchSessions: async (keyword, categoryId) => {
         set({ isLoading: true });
@@ -223,6 +228,46 @@ export const useAppStore = create<AppState>((set, get) => ({
             console.error("流式发送失败", error);
             // 生产环境应该在这里处理错误回滚
         }
-    }
+    },
+
+    fetchDocuments: async () => {
+        try {
+            const res = await api.get<DocumentInfo[]>("/documents");
+            set({ documents: res.data });
+        } catch (error) {
+            console.error("加载文档列表失败", error);
+        }
+    },
+
+    uploadDocument: async (file: File) => {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await api.post("/documents", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+                timeout: 300000, // 5分钟超时，大文件+Embedding可能较慢
+            });
+
+            // 上传成功后刷新文档列表
+            get().fetchDocuments();
+            return res.data;
+        } catch (error: any) {
+            const msg = error?.response?.data?.detail || error?.message || "上传失败";
+            throw new Error(msg);
+        }
+    },
+
+    deleteDocument: async (filename: string) => {
+        try {
+            await api.delete(`/documents/${encodeURIComponent(filename)}`);
+            // 乐观更新
+            set((state) => ({
+                documents: state.documents.filter((d) => d.filename !== filename),
+            }));
+        } catch (error) {
+            console.error("删除文档失败", error);
+        }
+    },
 
 }));

@@ -6,16 +6,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Search, MessageSquare, Plus, Trash2 } from "lucide-react";
-import { useAppStore } from "@/lib/store"; // 引入我们的大脑
-import { cn } from "@/lib/utils"; // shadcn 的工具类
+import { Search, MessageSquare, Plus, Trash2, BookOpen } from "lucide-react";
+import { useAppStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
+import { FileUpload } from "@/components/FileUpload";
 
 export function Sidebar() {
     // 1. 从 Store 中提取状态和动作
-    const { sessions, currentSessionId, fetchSessions, createSession, selectSession, deleteSession, categories, fetchCategories, activeCategoryId, setCategoryFilter } = useAppStore();
+    const { sessions, currentSessionId, fetchSessions, createSession, selectSession, deleteSession, categories, fetchCategories, activeCategoryId, setCategoryFilter, fetchDocuments } = useAppStore();
 
-    // 本地状态：搜索框的输入值（这是 UI 状态，不用放进全局 Store）
     const [keyword, setKeyword] = useState("");
+    const [showUpload, setShowUpload] = useState(false);
 
     // 2. 组件加载时，获取会话列表
     // useEffect(() => {
@@ -24,7 +25,8 @@ export function Sidebar() {
     // 组件加载时，同时获取会话和分类
     useEffect(() => {
         fetchSessions();
-        fetchCategories(); // <--- 获取分类
+        fetchCategories();
+        fetchDocuments();
     }, []);
 
     // 3. 处理搜索（这里做了个简单的防抖，回车才搜索，或者你可以做成实时）
@@ -55,7 +57,24 @@ export function Sidebar() {
                         onKeyDown={handleSearch}
                     />
                 </div>
+
+                {/* 知识库管理按钮 */}
+                <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2 text-sm"
+                    onClick={() => setShowUpload(!showUpload)}
+                >
+                    <BookOpen size={16} />
+                    {showUpload ? "收起知识库" : "管理知识库"}
+                </Button>
             </div>
+
+            {/* 文件上传区域（可收起） */}
+            {showUpload && (
+                <div className="px-4 py-3 border-b bg-slate-50/80">
+                    <FileUpload />
+                </div>
+            )}
 
             <Separator />
 

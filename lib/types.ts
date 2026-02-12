@@ -20,3 +20,8 @@ export interface Message {
     content: string;
     created_at: string;
 }
+
+export interface DocumentInfo {
+    filename: string;
+    chunk_count: number;
+}
