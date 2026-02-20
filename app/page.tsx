@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { DiaryPanel } from "@/components/DiaryPanel";
 import { useAppStore } from "@/lib/store";
-import { MessageSquareDashed, Send, Bot, User, BookOpen, ChevronDown, ChevronUp, Sparkles, MessageCircle, BookMarked } from "lucide-react";
+import { Send, Bot, User, BookOpen, ChevronDown, ChevronUp, MessageCircle, BookMarked } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -119,24 +119,93 @@ export default function Home() {
           <>
             {!currentSessionId ? (
               /* 欢迎界面 */
-              <div className="flex-1 flex flex-col items-center justify-center text-slate-400 px-8">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mb-6 shadow-lg">
-                  <Sparkles size={28} className="text-white" />
-                </div>
-                <h1 className="text-2xl font-bold text-slate-700 mb-2">觉醒教练</h1>
-                <p className="text-sm text-slate-400 mb-8 text-center max-w-md">
-                  你的个人成长 AI 教练，基于你的知识库提供专业指导。
-                  上传书籍到知识库，开始你的成长之旅。
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-xl w-full">
-                  {["📖 这本书的核心观点是什么？", "🧠 如何培养深度学习的习惯？", "💡 我总是拖延，该怎么改变？"].map((q, i) => (
-                    <button
-                      key={i}
-                      className="text-left text-xs p-3 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 transition-all text-slate-600"
-                    >
-                      {q}
-                    </button>
-                  ))}
+              <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto px-6 py-10"
+                style={{ background: "linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f5f3ff 100%)" }}
+              >
+                <div className="max-w-2xl w-full space-y-8">
+                  {/* 标题区域 */}
+                  <div className="text-center space-y-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-xs text-indigo-600 font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                      AI 觉醒教练 · 随时在线
+                    </div>
+                    <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent leading-tight">
+                      用日记照亮自我<br />用知识点燃成长
+                    </h1>
+                    <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+                      每一篇日记都是你人生轨迹的实时镜像，
+                      每一本书都是前人验证过的智慧结晶。
+                      当它们交汇，属于你的成长体系便开始生长。
+                    </p>
+                  </div>
+
+                  {/* 三大核心价值 */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="group p-5 rounded-2xl bg-white/70 backdrop-blur border border-white/50 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform">
+                        <span className="text-lg">📔</span>
+                      </div>
+                      <h3 className="font-semibold text-sm text-slate-700 mb-1">日记 · 人生的镜像</h3>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        通过持续书写和回顾，觉察行为模式、情绪周期与成长轨迹
+                      </p>
+                    </div>
+
+                    <div className="group p-5 rounded-2xl bg-white/70 backdrop-blur border border-white/50 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform">
+                        <span className="text-lg">📚</span>
+                      </div>
+                      <h3 className="font-semibold text-sm text-slate-700 mb-1">知识 · 现实的桥梁</h3>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        用理论照亮现实，用你的真实经历验证和内化书中的智慧
+                      </p>
+                    </div>
+
+                    <div className="group p-5 rounded-2xl bg-white/70 backdrop-blur border border-white/50 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform">
+                        <span className="text-lg">🌱</span>
+                      </div>
+                      <h3 className="font-semibold text-sm text-slate-700 mb-1">觉醒 · 内在的力量</h3>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        每个人都有自我成长的力量，教练是你的镜子和催化剂
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 引言 */}
+                  <div className="text-center py-3">
+                    <blockquote className="text-xs text-slate-400 italic">
+                      「做总比不做强。人生之路还很长，何必急于一时。」
+                    </blockquote>
+                  </div>
+
+                  {/* 快速开始 */}
+                  <div className="space-y-3">
+                    <p className="text-xs text-slate-400 text-center font-medium">✨ 试着问我</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {[
+                        { emoji: "🪞", text: "帮我分析今天的日记，有什么值得关注的模式？" },
+                        { emoji: "🧠", text: "最近总感到焦虑，书里有什么方法可以帮到我？" },
+                        { emoji: "🎯", text: "我想建立一个早起习惯，该怎么开始？" },
+                        { emoji: "💡", text: "回顾我最近的状态，有哪些成长和进步？" },
+                      ].map((q, i) => (
+                        <button
+                          key={i}
+                          onClick={async () => {
+                            await useAppStore.getState().createSession();
+                            // 短暂延迟确保 session 创建完成
+                            setTimeout(() => {
+                              useAppStore.getState().sendMessageStream(q.text);
+                            }, 300);
+                          }}
+                          className="flex items-start gap-2.5 text-left text-xs p-3.5 rounded-xl border border-slate-200/80 bg-white/60 backdrop-blur hover:border-indigo-300 hover:bg-white hover:shadow-sm transition-all text-slate-600 group"
+                        >
+                          <span className="text-base shrink-0 mt-0.5 group-hover:scale-110 transition-transform">{q.emoji}</span>
+                          <span className="leading-relaxed">{q.text}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (

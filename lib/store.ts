@@ -23,7 +23,11 @@ interface AppState {
     fetchMessages: (sessionId: string) => Promise<void>;
     sendMessage: (content: string) => Promise<void>;
     fetchCategories: () => Promise<void>;
+    createCategory: (name: string, colorCode?: string) => Promise<void>;
+    updateCategory: (id: number, name: string, colorCode?: string) => Promise<void>;
+    deleteCategory: (id: number) => Promise<void>;
     setCategoryFilter: (id: number | null) => void;
+    updateSessionCategory: (sessionId: string, categoryId: number | null) => Promise<void>;
     sendMessageStream: (content: string) => Promise<void>;
     fetchDocuments: () => Promise<void>;
     uploadDocument: (file: File) => Promise<void>;
@@ -151,6 +155,49 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ activeCategoryId: id });
         // 切换分类时，重新加载会话列表
         get().fetchSessions(undefined, id || undefined);
+    },
+
+    createCategory: async (name, colorCode) => {
+        try {
+            await api.post('/categories/', { name, color_code: colorCode || '#6366f1' });
+            get().fetchCategories();
+        } catch (error) {
+            console.error('创建分类失败', error);
+        }
+    },
+
+    updateCategory: async (id, name, colorCode) => {
+        try {
+            await api.put(`/categories/${id}`, { name, color_code: colorCode });
+            get().fetchCategories();
+        } catch (error) {
+            console.error('更新分类失败', error);
+        }
+    },
+
+    deleteCategory: async (id) => {
+        try {
+            await api.delete(`/categories/${id}`);
+            if (get().activeCategoryId === id) {
+                set({ activeCategoryId: null });
+            }
+            get().fetchCategories();
+            get().fetchSessions();
+        } catch (error) {
+            console.error('删除分类失败', error);
+        }
+    },
+
+    updateSessionCategory: async (sessionId, categoryId) => {
+        try {
+            const payload = categoryId === null
+                ? { clear_category: true }
+                : { category_id: categoryId };
+            await api.patch(`/sessions/${sessionId}`, payload);
+            get().fetchSessions();
+        } catch (error) {
+            console.error('更新会话分类失败', error);
+        }
     },
 
     sendMessageStream: async (content) => {
