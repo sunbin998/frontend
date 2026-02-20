@@ -1,7 +1,7 @@
 // frontend/lib/store.ts
 import { create } from 'zustand';
 import api from './api';
-import { Session, Category, Message, DocumentInfo } from './types';
+import { Session, Category, Message, DocumentInfo, DiaryEntry } from './types';
 
 interface AppState {
     // 数据状态
@@ -12,6 +12,8 @@ interface AppState {
     currentSessionId: string | null;
     isLoading: boolean;
     documents: DocumentInfo[];
+    diaries: DiaryEntry[];
+    currentDiaryDate: string;
 
     // 动作 (Actions)
     fetchSessions: (keyword?: string, categoryId?: number) => Promise<void>;
@@ -26,6 +28,10 @@ interface AppState {
     fetchDocuments: () => Promise<void>;
     uploadDocument: (file: File) => Promise<void>;
     deleteDocument: (filename: string) => Promise<void>;
+    fetchDiaries: (month?: string) => Promise<void>;
+    saveDiary: (date: string, content: string, mood?: string, tags?: string[]) => Promise<void>;
+    deleteDiary: (date: string) => Promise<void>;
+    setDiaryDate: (date: string) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -189,21 +195,65 @@ export const useAppStore = create<AppState>((set, get) => ({
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let aiContent = "";
+            let pendingSources: any[] = [];
+            let sseBuffer = ""; // 缓冲区：处理跨 chunk 的大型 SSE 事件
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                const chunk = decoder.decode(value);
-                // 解析 SSE 格式: "data: Hello\n\ndata: World\n\n"
-                const lines = chunk.split('\n\n');
+                sseBuffer += decoder.decode(value, { stream: true });
 
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const data = line.slice(6); // 去掉 "data: "
+                // 按双换行分割 SSE 事件，最后一段可能不完整，留在缓冲区
+                const parts = sseBuffer.split('\n\n');
+                sseBuffer = parts.pop() || ""; // 最后一段可能不完整
+
+                for (const event of parts) {
+                    if (!event.trim()) continue;
+
+                    // 处理 sources 事件：event: sources\ndata: [...]
+                    if (event.startsWith('event: sources')) {
+                        const dataLine = event.split('\n').find(l => l.startsWith('data: '));
+                        if (dataLine) {
+                            try {
+                                pendingSources = JSON.parse(dataLine.slice(6));
+
+                                // 将 sources 附加到 AI 消息
+                                set((state) => {
+                                    const newMessages = [...state.messages];
+                                    const idx = newMessages.findIndex(m => m.id === tempAiMsgId);
+                                    if (idx !== -1) {
+                                        newMessages[idx] = { ...newMessages[idx], sources: pendingSources };
+                                    }
+                                    return { messages: newMessages };
+                                });
+                            } catch (e) {
+                                console.error("解析 sources 失败", e);
+                            }
+                        }
+                        continue;
+                    }
+
+                    // 处理 title 事件：event: title\ndata: ...
+                    if (event.startsWith('event: title')) {
+                        // 标题更新了，刷新 sessions 列表
+                        get().fetchSessions();
+                        continue;
+                    }
+
+                    // 处理普通 data 事件
+                    if (event.startsWith('data: ')) {
+                        const data = event.slice(6);
                         if (data === '[DONE]') break;
 
-                        aiContent += data;
+                        // 后端用 JSON 编码了 token（保留换行符等特殊字符）
+                        try {
+                            const token = JSON.parse(data);
+                            aiContent += token;
+                        } catch {
+                            // 降级：如果不是合法 JSON，直接用原始文本
+                            aiContent += data;
+                        }
 
                         // 5. 实时更新 Store 中的最后一条消息 (AI 消息)
                         set((state) => {
@@ -267,6 +317,53 @@ export const useAppStore = create<AppState>((set, get) => ({
             }));
         } catch (error) {
             console.error("删除文档失败", error);
+        }
+    },
+
+    // ==========================================
+    // Diary
+    // ==========================================
+    diaries: [],
+    currentDiaryDate: new Date().toISOString().slice(0, 10),
+
+    setDiaryDate: (date: string) => {
+        set({ currentDiaryDate: date });
+    },
+
+    fetchDiaries: async (month?: string) => {
+        try {
+            const params = month ? { month } : {};
+            const res = await api.get<DiaryEntry[]>("/diary", { params });
+            set({ diaries: res.data });
+        } catch (error) {
+            console.error("加载日记列表失败", error);
+        }
+    },
+
+    saveDiary: async (date: string, content: string, mood?: string, tags?: string[]) => {
+        try {
+            await api.post("/diary", {
+                date,
+                content,
+                mood: mood || null,
+                tags: tags || null,
+            });
+            // 刷新列表
+            get().fetchDiaries();
+        } catch (error) {
+            console.error("保存日记失败", error);
+            throw error;
+        }
+    },
+
+    deleteDiary: async (date: string) => {
+        try {
+            await api.delete(`/diary/${date}`);
+            set((state) => ({
+                diaries: state.diaries.filter(d => d.date !== date),
+            }));
+        } catch (error) {
+            console.error("删除日记失败", error);
         }
     },
 
