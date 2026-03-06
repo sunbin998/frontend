@@ -80,9 +80,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     },
 
     selectSession: (id) => {
-        set({ currentSessionId: id });
-        // TODO: 这里未来会触发 "fetchMessages(id)"
-        get().fetchMessages(id); // <--- 关键联动
+        // 找到对应 session，同步日记日期到该会话的创建日期
+        const session = get().sessions.find(s => s.id === id);
+        const sessionDate = session?.created_at
+            ? new Date(session.created_at).toISOString().slice(0, 10)
+            : new Date().toISOString().slice(0, 10);
+
+        set({ currentSessionId: id, currentDiaryDate: sessionDate });
+        get().fetchMessages(id);
     },
 
     deleteSession: async (id) => {
