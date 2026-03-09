@@ -6,10 +6,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { MessageSquare, Plus, Trash2, BookOpen, Tag, X, Check, Pencil, ArrowUpDown, ArrowUp, ArrowDown, Calendar } from "lucide-react";
+import { MessageSquare, Plus, Trash2, BookOpen, Tag, X, Check, Pencil, ArrowUpDown, ArrowUp, ArrowDown, Calendar, BarChart2 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { FileUpload } from "@/components/FileUpload";
+import Link from 'next/link';
 
 // 预设颜色
 const PRESET_COLORS = [
@@ -134,6 +135,17 @@ export function Sidebar() {
                     <BookOpen size={16} />
                     {showUpload ? "收起知识库" : "管理知识库"}
                 </Button>
+
+                {/* 评测看板按钮 */}
+                <Link href="/eval" className="w-full block">
+                    <Button
+                        variant="secondary"
+                        className="w-full justify-start gap-2 text-sm text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100"
+                    >
+                        <BarChart2 size={16} />
+                        系统评测大盘
+                    </Button>
+                </Link>
             </div>
 
             {/* 文件上传区域（可收起） */}
