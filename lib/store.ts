@@ -14,6 +14,7 @@ interface AppState {
     documents: DocumentInfo[];
     diaries: DiaryEntry[];
     currentDiaryDate: string;
+    selectedBooks: string[];  // 选中的书籍过滤（空数组=全部）
 
     // 动作 (Actions)
     fetchSessions: (keyword?: string, categoryId?: number) => Promise<void>;
@@ -36,6 +37,7 @@ interface AppState {
     saveDiary: (date: string, content: string, mood?: string, tags?: string[]) => Promise<void>;
     deleteDiary: (date: string) => Promise<void>;
     setDiaryDate: (date: string) => void;
+    setSelectedBooks: (books: string[]) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -54,7 +56,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             if (keyword) params.append("keyword", keyword);
             if (categoryId) params.append("category_id", categoryId.toString());
 
-            const res = await api.get<Session[]>(`/sessions?${params.toString()}`);
+            const res = await api.get<Session[]>(`/sessions/?${params.toString()}`);
             set({ sessions: res.data });
         } catch (error) {
             console.error("Failed to fetch sessions", error);
@@ -66,7 +68,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     createSession: async (title = "新对话") => {
         try {
             // 1. 调用后端创建
-            const res = await api.post<Session>("/sessions", { title });
+            const res = await api.post<Session>("/sessions/", { title });
             const newSession = res.data;
 
             // 2. 乐观更新：直接把新会话加到列表头部，并自动选中
@@ -149,7 +151,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     fetchCategories: async () => {
         try {
-            const res = await api.get<Category[]>("/categories");
+            const res = await api.get<Category[]>("/categories/");
             set({ categories: res.data });
         } catch (error) {
             console.error("加载分类失败", error);
@@ -237,7 +239,8 @@ export const useAppStore = create<AppState>((set, get) => ({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     session_id: currentSessionId,
-                    content: content
+                    content: content,
+                    book_filter: get().selectedBooks.length > 0 ? get().selectedBooks : null,
                 })
             });
 
@@ -377,6 +380,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     // ==========================================
     diaries: [],
     currentDiaryDate: new Date().toISOString().slice(0, 10),
+    selectedBooks: [],
+
+    setSelectedBooks: (books: string[]) => {
+        set({ selectedBooks: books });
+    },
 
     setDiaryDate: (date: string) => {
         set({ currentDiaryDate: date });

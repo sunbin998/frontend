@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { DiaryPanel } from "@/components/DiaryPanel";
 import { useAppStore } from "@/lib/store";
-import { Send, Bot, User, BookOpen, ChevronDown, ChevronUp, MessageCircle, BookMarked } from "lucide-react";
+import { Send, Bot, User, BookOpen, ChevronDown, ChevronUp, MessageCircle, BookMarked, Library, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -49,12 +49,21 @@ function SourcesPanel({ sources }: { sources: Source[] }) {
 type ViewMode = "chat" | "diary";
 
 export default function Home() {
-  const { currentSessionId, sessions, messages, sendMessageStream } = useAppStore();
+  const { 
+    currentSessionId, sessions, messages, sendMessageStream,
+    documents, fetchDocuments, selectedBooks, setSelectedBooks 
+  } = useAppStore();
   const currentSession = sessions.find(s => s.id === currentSessionId);
 
   const [inputContent, setInputContent] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("chat");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [showBookFilter, setShowBookFilter] = useState(false);
+
+  // 初始化加载文档列表
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
 
   // 自动滚动到底部
   useEffect(() => {
@@ -270,8 +279,71 @@ export default function Home() {
                 </div>
 
                 {/* Input Area */}
-                <div className="p-4 border-t bg-white">
+                <div className="p-4 border-t bg-white relative">
+                  
+                  {/* 书籍选择器面板 */}
+                  {showBookFilter && (
+                    <div className="absolute bottom-full left-4 mb-2 w-72 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-20 animate-in fade-in slide-in-from-bottom-2">
+                       <div className="p-3 border-b bg-slate-50 flex justify-between items-center">
+                          <span className="text-xs font-semibold text-slate-700">选择检索知识库限定范围</span>
+                          <button 
+                            className="text-xs text-indigo-600 hover:text-indigo-800"
+                            onClick={() => setSelectedBooks([])}
+                          >
+                            恢复全选
+                          </button>
+                       </div>
+                       <div className="max-h-60 overflow-y-auto p-2 space-y-1">
+                          {documents.length === 0 ? (
+                             <div className="text-xs text-slate-400 text-center py-4">暂无书籍，去知识库上传吧！</div>
+                          ) : (
+                             documents.map(doc => {
+                               const isSelected = selectedBooks.length === 0 || selectedBooks.includes(doc.filename);
+                               return (
+                                 <button
+                                   key={doc.filename}
+                                   className={cn(
+                                     "w-full flex items-center justify-between text-left p-2 rounded-lg text-xs transition-colors",
+                                     isSelected ? "bg-indigo-50 text-indigo-700 font-medium" : "hover:bg-slate-50 text-slate-600"
+                                   )}
+                                   onClick={() => {
+                                      let newBooks = [...selectedBooks];
+                                      if (selectedBooks.length === 0) {
+                                         // 从全选切到单选
+                                         newBooks = [doc.filename];
+                                      } else if (selectedBooks.includes(doc.filename)) {
+                                         newBooks = newBooks.filter(b => b !== doc.filename);
+                                      } else {
+                                         newBooks.push(doc.filename);
+                                      }
+                                      setSelectedBooks(newBooks);
+                                   }}
+                                 >
+                                   <span className="truncate pr-2">{doc.filename}</span>
+                                   {isSelected && <CheckCircle2 size={14} className="shrink-0" />}
+                                 </button>
+                               );
+                             })
+                          )}
+                       </div>
+                    </div>
+                  )}
+
                   <div className="flex gap-2 max-w-4xl mx-auto items-end">
+                    {/* 知识库过滤按钮 */}
+                    <button
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-sm shrink-0 border",
+                        selectedBooks.length > 0 && selectedBooks.length < documents.length 
+                          ? "bg-indigo-50 border-indigo-200 text-indigo-600" 
+                          : "bg-white border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                      )}
+                      onClick={() => setShowBookFilter(!showBookFilter)}
+                      title="限定检索范围"
+                    >
+                      <Library size={18} />
+                    </button>
+                    
                     <textarea
                       className="flex-1 border rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 bg-slate-50 resize-none min-h-[42px] max-h-[160px]"
                       placeholder="输入消息... (Shift+Enter 换行)"

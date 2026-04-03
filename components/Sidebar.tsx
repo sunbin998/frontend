@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { MessageSquare, Plus, Trash2, BookOpen, Tag, X, Check, Pencil, ArrowUpDown, ArrowUp, ArrowDown, Calendar } from "lucide-react";
+import { MessageSquare, Plus, Trash2, BookOpen, Tag, X, Check, Pencil, ArrowUpDown, ArrowUp, ArrowDown, Calendar, Search } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { FileUpload } from "@/components/FileUpload";
@@ -61,19 +61,30 @@ export function Sidebar() {
     // 会话分类选择状态
     const [assigningSessionId, setAssigningSessionId] = useState<string | null>(null);
 
+    // 会话搜索状态
+    const [searchKeyword, setSearchKeyword] = useState("");
+
     const categoryInputRef = useRef<HTMLInputElement>(null);
 
+    // 基础数据加载（分类、知识库）
     useEffect(() => {
-        fetchSessions();
         fetchCategories();
         fetchDocuments();
-    }, []);
+    }, [fetchCategories, fetchDocuments]);
+
+    // 会话列表（带防抖搜索与分类过滤）
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchSessions(searchKeyword, activeCategoryId || undefined);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchKeyword, activeCategoryId, fetchSessions]);
 
     // 排序后的会话列表
     const sortedSessions = useMemo(() => {
         const sorted = [...sessions].sort((a, b) => {
-            const dateA = new Date(a.updated_at).getTime();
-            const dateB = new Date(b.updated_at).getTime();
+            const dateA = new Date(a.created_at).getTime();
+            const dateB = new Date(b.created_at).getTime();
             return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
         });
         return sorted;
@@ -134,6 +145,17 @@ export function Sidebar() {
                     <BookOpen size={16} />
                     {showUpload ? "收起知识库" : "管理知识库"}
                 </Button>
+
+                {/* 搜索框 */}
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                    <Input
+                        className="pl-9 h-9 bg-white text-xs rounded-xl border-slate-200 focus-visible:ring-indigo-500/30"
+                        placeholder="搜索标题或内容..."
+                        value={searchKeyword}
+                        onChange={(e) => setSearchKeyword(e.target.value)}
+                    />
+                </div>
             </div>
 
             {/* 文件上传区域（可收起） */}
@@ -291,16 +313,16 @@ export function Sidebar() {
                                     onClick={() => selectSession(session.id)}
                                 >
                                     <MessageSquare className="mr-3 h-4 w-4 opacity-70 shrink-0" />
-                                    <div className="flex flex-col items-start overflow-hidden w-full">
-                                        <div className="flex items-center justify-between w-full gap-2">
+                                    <span className="flex flex-col items-start overflow-hidden w-full">
+                                        <span className="flex items-center justify-between w-full gap-2">
                                             <span className="truncate font-medium text-sm text-slate-700">
                                                 {session.title}
                                             </span>
                                             <span className="text-[9px] text-slate-400 whitespace-nowrap shrink-0">
-                                                {formatDate(session.updated_at)}
+                                                {formatDate(session.created_at)}
                                             </span>
-                                        </div>
-                                        <div className="flex items-center gap-1 mt-0.5">
+                                        </span>
+                                        <span className="flex items-center gap-1 mt-0.5">
                                             {cat && (
                                                 <span
                                                     className="text-[9px] px-1.5 py-0.5 rounded-full text-white shrink-0"
@@ -309,15 +331,17 @@ export function Sidebar() {
                                                     {cat.name}
                                                 </span>
                                             )}
-                                            <span className="truncate text-[10px] text-slate-400">
-                                                {session.summary || "暂无摘要..."}
-                                            </span>
-                                        </div>
-                                    </div>
+                                            {session.summary && (
+                                                <span className="truncate text-[10px] text-slate-400">
+                                                    {session.summary}
+                                                </span>
+                                            )}
+                                        </span>
+                                    </span>
                                 </Button>
 
-                                {/* 操作按钮 (悬停显示) */}
-                                <div className="absolute right-2 flex gap-0.5 opacity-0 group-hover:opacity-100">
+                                {/* 操作按钮 (悬停时高亮，常规维持暗灰，确保时刻可见) */}
+                                <div className="absolute right-2 flex gap-0.5 opacity-100 z-10 transition-opacity">
                                     {/* 分类选择 */}
                                     <button
                                         onClick={(e) => {
@@ -326,7 +350,7 @@ export function Sidebar() {
                                                 assigningSessionId === session.id ? null : session.id
                                             );
                                         }}
-                                        className="p-1 hover:bg-indigo-100 hover:text-indigo-600 rounded"
+                                        className="p-1 text-slate-400 hover:bg-indigo-100 hover:text-indigo-600 rounded transition-colors"
                                         title="设置分类"
                                     >
                                         <Tag size={13} />
@@ -337,7 +361,7 @@ export function Sidebar() {
                                             e.stopPropagation();
                                             if (confirm("确定删除吗？")) deleteSession(session.id);
                                         }}
-                                        className="p-1 hover:bg-red-100 hover:text-red-600 rounded"
+                                        className="p-1 text-slate-400 hover:bg-red-100 hover:text-red-600 rounded transition-colors"
                                     >
                                         <Trash2 size={13} />
                                     </button>
