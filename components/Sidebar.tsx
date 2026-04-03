@@ -307,13 +307,13 @@ export function Sidebar() {
                                 <Button
                                     variant={currentSessionId === session.id ? "secondary" : "ghost"}
                                     className={cn(
-                                        "w-full justify-start font-normal h-auto py-2.5 text-left pl-3 pr-16",
+                                        "flex-1 min-w-0 justify-start font-normal h-auto py-2.5 text-left pl-3",
                                         currentSessionId === session.id && "bg-white shadow-sm border"
                                     )}
                                     onClick={() => selectSession(session.id)}
                                 >
                                     <MessageSquare className="mr-3 h-4 w-4 opacity-70 shrink-0" />
-                                    <span className="flex flex-col items-start overflow-hidden w-full">
+                                    <span className="flex flex-col items-start overflow-hidden">
                                         <span className="flex items-center justify-between w-full gap-2">
                                             <span className="truncate font-medium text-sm text-slate-700">
                                                 {session.title}
@@ -331,18 +331,12 @@ export function Sidebar() {
                                                     {cat.name}
                                                 </span>
                                             )}
-                                            {session.summary && (
-                                                <span className="truncate text-[10px] text-slate-400">
-                                                    {session.summary}
-                                                </span>
-                                            )}
                                         </span>
                                     </span>
                                 </Button>
 
-                                {/* 操作按钮 (悬停时高亮，常规维持暗灰，确保时刻可见) */}
-                                <div className="absolute right-2 flex gap-0.5 opacity-100 z-10 transition-opacity">
-                                    {/* 分类选择 */}
+                                {/* 操作按钮 - 悬停时显示 */}
+                                <div className="hidden group-hover:flex items-center gap-0.5 shrink-0 pr-1">
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -350,18 +344,18 @@ export function Sidebar() {
                                                 assigningSessionId === session.id ? null : session.id
                                             );
                                         }}
-                                        className="p-1 text-slate-400 hover:bg-indigo-100 hover:text-indigo-600 rounded transition-colors"
+                                        className="p-1.5 text-slate-400 hover:bg-indigo-100 hover:text-indigo-600 rounded transition-colors"
                                         title="设置分类"
                                     >
                                         <Tag size={13} />
                                     </button>
-                                    {/* 删除 */}
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             if (confirm("确定删除吗？")) deleteSession(session.id);
                                         }}
-                                        className="p-1 text-slate-400 hover:bg-red-100 hover:text-red-600 rounded transition-colors"
+                                        className="p-1.5 text-slate-400 hover:bg-red-100 hover:text-red-600 rounded transition-colors"
+                                        title="删除对话"
                                     >
                                         <Trash2 size={13} />
                                     </button>
