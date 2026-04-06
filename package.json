@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "smoke:auth": "node scripts/auth-smoke.mjs",
+    "smoke:isolation": "node scripts/isolation-smoke.mjs"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",

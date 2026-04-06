@@ -2,14 +2,16 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { MessageSquare, Plus, Trash2, BookOpen, Tag, X, Check, Pencil, ArrowUpDown, ArrowUp, ArrowDown, Calendar, Search } from "lucide-react";
+import { MessageSquare, Plus, Trash2, BookOpen, Tag, X, Check, Pencil, ArrowUp, ArrowDown, Calendar, Search, LogOut, UserCircle2 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { FileUpload } from "@/components/FileUpload";
+import type { Session } from "@/lib/types";
 
 // 预设颜色
 const PRESET_COLORS = [
@@ -39,12 +41,14 @@ function formatDate(dateStr: string): string {
 }
 
 export function Sidebar() {
+    const router = useRouter();
     const {
         sessions, currentSessionId,
         fetchSessions, createSession, selectSession, deleteSession,
         categories, fetchCategories, activeCategoryId, setCategoryFilter,
         createCategory, updateCategory, deleteCategory, updateSessionCategory,
         fetchDocuments,
+        user, logout,
     } = useAppStore();
 
     const [showUpload, setShowUpload] = useState(false);
@@ -119,7 +123,7 @@ export function Sidebar() {
     };
 
     // 获取会话所属分类
-    const getSessionCategory = (session: any) => {
+    const getSessionCategory = (session: Session) => {
         if (!session.category_id) return null;
         return categories.find(c => c.id === session.category_id) || null;
     };
@@ -407,8 +411,20 @@ export function Sidebar() {
                 </div>
             </ScrollArea>
 
-            <div className="p-4 border-t text-xs text-center text-slate-400">
-                Personal KB Assistant v0.1
+            <div className="p-4 border-t space-y-2">
+                <div className="flex items-center gap-2 text-xs text-slate-500 bg-white border rounded-lg px-2.5 py-2">
+                    <UserCircle2 size={14} className="text-indigo-500 shrink-0" />
+                    <span className="truncate">{user?.username || "未登录用户"}</span>
+                </div>
+                <button
+                    onClick={() => {
+                        logout();
+                        router.replace('/login');
+                    }}
+                    className="w-full flex items-center justify-center gap-1.5 text-xs py-2 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors"
+                >
+                    <LogOut size={12} /> 退出登录
+                </button>
             </div>
         </div>
     );

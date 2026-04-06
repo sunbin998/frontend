@@ -29,7 +29,7 @@ export function DiaryPanel() {
     // 加载日记列表
     useEffect(() => {
         fetchDiaries();
-    }, []);
+    }, [fetchDiaries]);
 
     // 当选择的日期变化时，加载对应日记
     useEffect(() => {

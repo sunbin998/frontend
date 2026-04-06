@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Source } from "@/lib/types";
+import { useRouter } from "next/navigation";
 
 // RAG 来源折叠组件
 function SourcesPanel({ sources }: { sources: Source[] }) {
@@ -49,9 +50,11 @@ function SourcesPanel({ sources }: { sources: Source[] }) {
 type ViewMode = "chat" | "diary";
 
 export default function Home() {
-  const { 
+  const router = useRouter();
+  const {
     currentSessionId, sessions, messages, sendMessageStream,
-    documents, fetchDocuments, selectedBooks, setSelectedBooks 
+    documents, fetchDocuments, selectedBooks, setSelectedBooks,
+    isAuthenticated, isAuthChecking, initAuth,
   } = useAppStore();
   const currentSession = sessions.find(s => s.id === currentSessionId);
 
@@ -60,10 +63,22 @@ export default function Home() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showBookFilter, setShowBookFilter] = useState(false);
 
+  useEffect(() => {
+    initAuth();
+  }, [initAuth]);
+
+  useEffect(() => {
+    if (!isAuthChecking && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isAuthChecking, isAuthenticated, router]);
+
   // 初始化加载文档列表
   useEffect(() => {
-    fetchDocuments();
-  }, [fetchDocuments]);
+    if (isAuthenticated) {
+      fetchDocuments();
+    }
+  }, [fetchDocuments, isAuthenticated]);
 
   // 自动滚动到底部
   useEffect(() => {
@@ -84,6 +99,18 @@ export default function Home() {
       handleSend();
     }
   };
+
+  if (isAuthChecking) {
+    return (
+      <main className="h-screen w-full flex items-center justify-center bg-slate-50">
+        <div className="text-sm text-slate-500">正在验证登录状态...</div>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <main className="flex h-screen w-full overflow-hidden bg-white">
@@ -280,52 +307,52 @@ export default function Home() {
 
                 {/* Input Area */}
                 <div className="p-4 border-t bg-white relative">
-                  
+
                   {/* 书籍选择器面板 */}
                   {showBookFilter && (
                     <div className="absolute bottom-full left-4 mb-2 w-72 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-20 animate-in fade-in slide-in-from-bottom-2">
-                       <div className="p-3 border-b bg-slate-50 flex justify-between items-center">
-                          <span className="text-xs font-semibold text-slate-700">选择检索知识库限定范围</span>
-                          <button 
-                            className="text-xs text-indigo-600 hover:text-indigo-800"
-                            onClick={() => setSelectedBooks([])}
-                          >
-                            恢复全选
-                          </button>
-                       </div>
-                       <div className="max-h-60 overflow-y-auto p-2 space-y-1">
-                          {documents.length === 0 ? (
-                             <div className="text-xs text-slate-400 text-center py-4">暂无书籍，去知识库上传吧！</div>
-                          ) : (
-                             documents.map(doc => {
-                               const isSelected = selectedBooks.length === 0 || selectedBooks.includes(doc.filename);
-                               return (
-                                 <button
-                                   key={doc.filename}
-                                   className={cn(
-                                     "w-full flex items-center justify-between text-left p-2 rounded-lg text-xs transition-colors",
-                                     isSelected ? "bg-indigo-50 text-indigo-700 font-medium" : "hover:bg-slate-50 text-slate-600"
-                                   )}
-                                   onClick={() => {
-                                      let newBooks = [...selectedBooks];
-                                      if (selectedBooks.length === 0) {
-                                         // 从全选切到单选
-                                         newBooks = [doc.filename];
-                                      } else if (selectedBooks.includes(doc.filename)) {
-                                         newBooks = newBooks.filter(b => b !== doc.filename);
-                                      } else {
-                                         newBooks.push(doc.filename);
-                                      }
-                                      setSelectedBooks(newBooks);
-                                   }}
-                                 >
-                                   <span className="truncate pr-2">{doc.filename}</span>
-                                   {isSelected && <CheckCircle2 size={14} className="shrink-0" />}
-                                 </button>
-                               );
-                             })
-                          )}
-                       </div>
+                      <div className="p-3 border-b bg-slate-50 flex justify-between items-center">
+                        <span className="text-xs font-semibold text-slate-700">选择检索知识库限定范围</span>
+                        <button
+                          className="text-xs text-indigo-600 hover:text-indigo-800"
+                          onClick={() => setSelectedBooks([])}
+                        >
+                          恢复全选
+                        </button>
+                      </div>
+                      <div className="max-h-60 overflow-y-auto p-2 space-y-1">
+                        {documents.length === 0 ? (
+                          <div className="text-xs text-slate-400 text-center py-4">暂无书籍，去知识库上传吧！</div>
+                        ) : (
+                          documents.map(doc => {
+                            const isSelected = selectedBooks.length === 0 || selectedBooks.includes(doc.filename);
+                            return (
+                              <button
+                                key={doc.filename}
+                                className={cn(
+                                  "w-full flex items-center justify-between text-left p-2 rounded-lg text-xs transition-colors",
+                                  isSelected ? "bg-indigo-50 text-indigo-700 font-medium" : "hover:bg-slate-50 text-slate-600"
+                                )}
+                                onClick={() => {
+                                  let newBooks = [...selectedBooks];
+                                  if (selectedBooks.length === 0) {
+                                    // 从全选切到单选
+                                    newBooks = [doc.filename];
+                                  } else if (selectedBooks.includes(doc.filename)) {
+                                    newBooks = newBooks.filter(b => b !== doc.filename);
+                                  } else {
+                                    newBooks.push(doc.filename);
+                                  }
+                                  setSelectedBooks(newBooks);
+                                }}
+                              >
+                                <span className="truncate pr-2">{doc.filename}</span>
+                                {isSelected && <CheckCircle2 size={14} className="shrink-0" />}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -334,8 +361,8 @@ export default function Home() {
                     <button
                       className={cn(
                         "w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-sm shrink-0 border",
-                        selectedBooks.length > 0 && selectedBooks.length < documents.length 
-                          ? "bg-indigo-50 border-indigo-200 text-indigo-600" 
+                        selectedBooks.length > 0 && selectedBooks.length < documents.length
+                          ? "bg-indigo-50 border-indigo-200 text-indigo-600"
                           : "bg-white border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50"
                       )}
                       onClick={() => setShowBookFilter(!showBookFilter)}
@@ -343,7 +370,7 @@ export default function Home() {
                     >
                       <Library size={18} />
                     </button>
-                    
+
                     <textarea
                       className="flex-1 border rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 bg-slate-50 resize-none min-h-[42px] max-h-[160px]"
                       placeholder="输入消息... (Shift+Enter 换行)"

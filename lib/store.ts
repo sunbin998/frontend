@@ -1,9 +1,13 @@
 // frontend/lib/store.ts
 import { create } from 'zustand';
 import api from './api';
-import { Session, Category, Message, DocumentInfo, DiaryEntry } from './types';
+import { clearAuthTokens, ensureValidAccessToken, setAuthTokens } from './auth';
+import { Session, Category, Message, DocumentInfo, DiaryEntry, User, AuthResponse, Source } from './types';
 
 interface AppState {
+    user: User | null;
+    isAuthenticated: boolean;
+    isAuthChecking: boolean;
     // 数据状态
     sessions: Session[];
     categories: Category[];
@@ -17,6 +21,10 @@ interface AppState {
     selectedBooks: string[];  // 选中的书籍过滤（空数组=全部）
 
     // 动作 (Actions)
+    initAuth: () => Promise<void>;
+    login: (username: string, password: string) => Promise<void>;
+    register: (username: string, password: string, email?: string) => Promise<void>;
+    logout: () => void;
     fetchSessions: (keyword?: string, categoryId?: number) => Promise<void>;
     createSession: (title?: string) => Promise<void>;
     selectSession: (id: string) => void;
@@ -41,6 +49,9 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
+    user: null,
+    isAuthenticated: false,
+    isAuthChecking: true,
     sessions: [],
     categories: [],
     activeCategoryId: null,
@@ -49,14 +60,66 @@ export const useAppStore = create<AppState>((set, get) => ({
     isLoading: false,
     documents: [],
 
+    initAuth: async () => {
+        set({ isAuthChecking: true });
+        const token = await ensureValidAccessToken();
+        if (!token) {
+            clearAuthTokens();
+            set({ user: null, isAuthenticated: false, isAuthChecking: false });
+            return;
+        }
+
+        try {
+            const res = await api.get<User>('/auth/me');
+            set({ user: res.data, isAuthenticated: true, isAuthChecking: false });
+        } catch {
+            clearAuthTokens();
+            set({ user: null, isAuthenticated: false, isAuthChecking: false });
+        }
+    },
+
+    login: async (username, password) => {
+        const res = await api.post<AuthResponse>('/auth/login', { username, password });
+        setAuthTokens(res.data.access_token, res.data.refresh_token);
+        set({ user: res.data.user, isAuthenticated: true, isAuthChecking: false });
+    },
+
+    register: async (username, password, email) => {
+        const res = await api.post<AuthResponse>('/auth/register', {
+            username,
+            password,
+            email: email || null,
+        });
+        setAuthTokens(res.data.access_token, res.data.refresh_token);
+        set({ user: res.data.user, isAuthenticated: true, isAuthChecking: false });
+    },
+
+    logout: () => {
+        clearAuthTokens();
+        set({
+            user: null,
+            isAuthenticated: false,
+            isAuthChecking: false,
+            sessions: [],
+            categories: [],
+            activeCategoryId: null,
+            messages: [],
+            currentSessionId: null,
+            documents: [],
+            diaries: [],
+            selectedBooks: [],
+            currentDiaryDate: new Date().toISOString().slice(0, 10),
+        });
+    },
+
     fetchSessions: async (keyword, categoryId) => {
         set({ isLoading: true });
         try {
-            const params = new URLSearchParams();
-            if (keyword) params.append("keyword", keyword);
-            if (categoryId) params.append("category_id", categoryId.toString());
+            const params: Record<string, string> = {};
+            if (keyword) params.keyword = keyword;
+            if (categoryId) params.category_id = categoryId.toString();
 
-            const res = await api.get<Session[]>(`/sessions/?${params.toString()}`);
+            const res = await api.get<Session[]>("/sessions/", { params });
             set({ sessions: res.data });
         } catch (error) {
             console.error("Failed to fetch sessions", error);
@@ -210,6 +273,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     sendMessageStream: async (content) => {
         const { currentSessionId, messages } = get();
         if (!currentSessionId) return;
+        const accessToken = await ensureValidAccessToken();
+        if (!accessToken) return;
 
         // 1. 乐观更新：用户消息立即上屏
         const tempUserMsg: Message = {
@@ -236,7 +301,10 @@ export const useAppStore = create<AppState>((set, get) => ({
             // 但因为我们配置了 next.config.ts 的 proxy，所以可以直接写 /api/...
             const response = await fetch('/api/chat/messages/stream', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`,
+                },
                 body: JSON.stringify({
                     session_id: currentSessionId,
                     content: content,
@@ -250,7 +318,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let aiContent = "";
-            let pendingSources: any[] = [];
+            let pendingSources: Source[] = [];
             let sseBuffer = ""; // 缓冲区：处理跨 chunk 的大型 SSE 事件
 
             while (true) {
@@ -271,7 +339,7 @@ export const useAppStore = create<AppState>((set, get) => ({
                         const dataLine = event.split('\n').find(l => l.startsWith('data: '));
                         if (dataLine) {
                             try {
-                                pendingSources = JSON.parse(dataLine.slice(6));
+                                pendingSources = JSON.parse(dataLine.slice(6)) as Source[];
 
                                 // 将 sources 附加到 AI 消息
                                 set((state) => {
@@ -357,8 +425,9 @@ export const useAppStore = create<AppState>((set, get) => ({
             // 上传成功后刷新文档列表
             get().fetchDocuments();
             return res.data;
-        } catch (error: any) {
-            const msg = error?.response?.data?.detail || error?.message || "上传失败";
+        } catch (error: unknown) {
+            const maybeError = error as { response?: { data?: { detail?: string } }; message?: string };
+            const msg = maybeError?.response?.data?.detail || maybeError?.message || "上传失败";
             throw new Error(msg);
         }
     },

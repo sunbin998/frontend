@@ -1,46 +1,39 @@
 // components/FileUpload.tsx
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { useAppStore } from "@/lib/store";
 import { Upload, X, FileText, Trash2, Loader2, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ACCEPTED_EXTENSIONS = [".pdf", ".epub", ".mobi", ".azw", ".azw3", ".txt", ".md"];
-const ACCEPTED_MIME_TYPES = [
-    "application/pdf",
-    "application/epub+zip",
-    "text/plain",
-    "text/markdown",
-    // mobi/azw 没有标准 MIME，用空字符串兜底
-];
 
 export function FileUpload() {
-    const { documents, fetchDocuments, uploadDocument, deleteDocument } = useAppStore();
+    const { documents, uploadDocument, deleteDocument } = useAppStore();
     const [isDragging, setIsDragging] = useState(false);
     const [uploadStatus, setUploadStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     // 拖拽事件处理
-    const handleDragOver = useCallback((e: React.DragEvent) => {
+    const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(true);
-    }, []);
+    };
 
-    const handleDragLeave = useCallback((e: React.DragEvent) => {
+    const handleDragLeave = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
-    }, []);
+    };
 
-    const handleDrop = useCallback(async (e: React.DragEvent) => {
+    const handleDrop = async (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
         const files = Array.from(e.dataTransfer.files);
         if (files.length > 0) {
             await handleUpload(files[0]);
         }
-    }, []);
+    };
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -80,10 +73,11 @@ export function FileUpload() {
                 type: "success",
                 message: `${file.name} 上传成功！`,
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const maybeError = error as { message?: string };
             setUploadStatus({
                 type: "error",
-                message: error?.message || "上传失败，请重试",
+                message: maybeError?.message || "上传失败，请重试",
             });
         } finally {
             setIsUploading(false);
