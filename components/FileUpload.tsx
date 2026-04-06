@@ -93,10 +93,10 @@ export function FileUpload() {
                 onDrop={handleDrop}
                 onClick={() => inputRef.current?.click()}
                 className={cn(
-                    "border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all",
+                    "border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all",
                     isDragging
-                        ? "border-indigo-500 bg-indigo-50"
-                        : "border-slate-200 hover:border-indigo-300 hover:bg-slate-50/50"
+                        ? "border-[#c96442] bg-[#f5ece8]"
+                        : "border-[#e8e6dc] hover:border-[#d1cfc5] hover:bg-[#faf9f5]"
                 )}
             >
                 <input
@@ -107,16 +107,16 @@ export function FileUpload() {
                     onChange={handleFileSelect}
                 />
                 {isUploading ? (
-                    <div className="flex flex-col items-center gap-2 text-indigo-600">
+                    <div className="flex flex-col items-center gap-2 text-[#c96442]">
                         <Loader2 size={32} className="animate-spin" />
                         <p className="text-sm font-medium">正在处理文件...</p>
-                        <p className="text-xs text-slate-400">解析 → 切片 → Embedding 生成中</p>
+                        <p className="text-xs text-[#87867f]">解析 → 切片 → Embedding 生成中</p>
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center gap-2 text-slate-400">
-                        <Upload size={32} className={isDragging ? "text-indigo-500" : ""} />
-                        <p className="text-sm font-medium text-slate-600">
-                            拖拽文件到这里，或 <span className="text-indigo-600 underline">点击选择</span>
+                    <div className="flex flex-col items-center gap-2 text-[#87867f]">
+                        <Upload size={32} className={isDragging ? "text-[#c96442]" : ""} />
+                        <p className="text-sm font-medium text-[#5e5d59]">
+                            拖拽文件到这里，或 <span className="text-[#c96442] underline">点击选择</span>
                         </p>
                         <p className="text-xs">支持 PDF、EPUB、MOBI、AZW、TXT、MD</p>
                     </div>
@@ -129,8 +129,8 @@ export function FileUpload() {
                     className={cn(
                         "flex items-center gap-2 px-3 py-2 rounded-lg text-sm",
                         uploadStatus.type === "success"
-                            ? "bg-green-50 text-green-700 border border-green-200"
-                            : "bg-red-50 text-red-700 border border-red-200"
+                            ? "bg-[#edf4eb] text-[#3d6a3a] border border-[#d7e8d3]"
+                            : "bg-[#f8ecec] text-[#b53333] border border-[#f1d9d9]"
                     )}
                 >
                     {uploadStatus.type === "success" ? (
@@ -148,18 +148,18 @@ export function FileUpload() {
             {/* 已上传文档列表 */}
             {documents.length > 0 && (
                 <div className="space-y-1">
-                    <h4 className="text-xs font-medium text-slate-500 mb-2">📚 知识库文件</h4>
+                    <h4 className="text-xs font-medium text-[#5e5d59] mb-2">📚 知识库文件</h4>
                     {documents.map((doc) => (
                         <div
                             key={doc.filename}
-                            className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-slate-100 group"
+                            className="flex items-center gap-2 px-3 py-2 bg-[#faf9f5] rounded-xl border border-[#f0eee6] group"
                         >
-                            <FileText size={16} className="text-indigo-500 shrink-0" />
+                            <FileText size={16} className="text-[#c96442] shrink-0" />
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-700 truncate">
+                                <p className="text-sm font-medium text-[#141413] truncate">
                                     {doc.filename}
                                 </p>
-                                <p className="text-[10px] text-slate-400">
+                                <p className="text-[10px] text-[#87867f]">
                                     {doc.chunk_count} 个切片
                                 </p>
                             </div>

@@ -90,17 +90,17 @@ export function DiaryPanel() {
     return (
         <div className="flex-1 flex flex-col h-full">
             {/* 日期导航栏 */}
-            <header className="h-14 border-b flex items-center px-6 justify-between bg-white/80 backdrop-blur z-10">
-                <button onClick={() => changeDate(-1)} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
-                    <ChevronLeft size={18} className="text-slate-600" />
+            <header className="h-14 border-b border-[#e8e6dc] flex items-center px-6 justify-between bg-[#f5f4ed]/95 backdrop-blur z-10">
+                <button onClick={() => changeDate(-1)} className="p-1.5 hover:bg-[#e8e6dc] rounded-lg transition-colors">
+                    <ChevronLeft size={18} className="text-[#5e5d59]" />
                 </button>
 
                 <div className="flex items-center gap-3">
-                    <h2 className="font-semibold text-lg text-slate-800">
+                    <h2 className="font-editorial text-[1.35rem] text-[#141413]">
                         {formatDate(currentDiaryDate)}
                     </h2>
                     {isToday && (
-                        <span className="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-medium">
+                        <span className="text-[10px] bg-[#f5ece8] text-[#c96442] px-2 py-0.5 rounded-full font-medium">
                             今天
                         </span>
                     )}
@@ -108,19 +108,19 @@ export function DiaryPanel() {
                         type="date"
                         value={currentDiaryDate}
                         onChange={(e) => setDiaryDate(e.target.value)}
-                        className="text-sm border rounded-lg px-2 py-1 text-slate-500 cursor-pointer"
+                        className="text-sm border border-[#e8e6dc] rounded-xl px-2 py-1 text-[#5e5d59] bg-[#faf9f5] cursor-pointer"
                     />
                 </div>
 
-                <button onClick={() => changeDate(1)} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
-                    <ChevronRight size={18} className="text-slate-600" />
+                <button onClick={() => changeDate(1)} className="p-1.5 hover:bg-[#e8e6dc] rounded-lg transition-colors">
+                    <ChevronRight size={18} className="text-[#5e5d59]" />
                 </button>
             </header>
 
             {/* 心情选择 */}
-            <div className="px-6 py-3 border-b bg-slate-50/50">
+            <div className="px-6 py-3 border-b border-[#f0eee6] bg-[#faf9f5]">
                 <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400 mr-1">今日心情：</span>
+                    <span className="text-xs text-[#87867f] mr-1">今日心情：</span>
                     {MOODS.map(m => (
                         <button
                             key={m.label}
@@ -131,8 +131,8 @@ export function DiaryPanel() {
                             className={cn(
                                 "w-8 h-8 rounded-full flex items-center justify-center text-base transition-all",
                                 mood === m.label
-                                    ? "bg-indigo-100 ring-2 ring-indigo-400 scale-110"
-                                    : "hover:bg-slate-100 opacity-60 hover:opacity-100"
+                                    ? "bg-[#f5ece8] ring-2 ring-[#c96442] scale-110"
+                                    : "hover:bg-[#f0eee6] opacity-60 hover:opacity-100"
                             )}
                             title={m.label}
                         >
@@ -140,7 +140,7 @@ export function DiaryPanel() {
                         </button>
                     ))}
                     {mood && (
-                        <span className="text-xs text-indigo-600 ml-1">{mood}</span>
+                        <span className="text-xs text-[#c96442] ml-1">{mood}</span>
                     )}
                 </div>
             </div>
@@ -148,7 +148,7 @@ export function DiaryPanel() {
             {/* 编辑区 */}
             <div className="flex-1 p-6 overflow-hidden">
                 <textarea
-                    className="w-full h-full resize-none text-sm leading-relaxed text-slate-700 bg-transparent focus:outline-none placeholder:text-slate-300"
+                    className="w-full h-full resize-none text-sm leading-relaxed text-[#4d4c48] bg-transparent focus:outline-none placeholder:text-[#b0aea5]"
                     placeholder={`写下今天的所思所感...\n\n你可以记录：\n• 今天做了什么\n• 有什么感悟\n• 遇到了什么困难\n• 明天想要改进什么`}
                     value={content}
                     onChange={(e) => {
@@ -160,8 +160,8 @@ export function DiaryPanel() {
             </div>
 
             {/* 底部操作栏 */}
-            <div className="px-6 py-3 border-t bg-white flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs text-slate-400">
+            <div className="px-6 py-3 border-t border-[#e8e6dc] bg-[#f5f4ed] flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs text-[#87867f]">
                     {currentDiary?.is_vectorized && (
                         <span className="flex items-center gap-1 text-green-600">
                             <Check size={12} /> 已同步到知识库
@@ -176,7 +176,7 @@ export function DiaryPanel() {
                     {currentDiary && (
                         <button
                             onClick={handleDelete}
-                            className="px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1"
+                            className="px-3 py-1.5 text-xs text-[#b53333] hover:bg-[#f8ecec] rounded-lg transition-colors flex items-center gap-1"
                         >
                             <Trash2 size={12} /> 删除
                         </button>
@@ -188,8 +188,8 @@ export function DiaryPanel() {
                         className={cn(
                             "px-4 py-1.5 text-xs rounded-lg transition-all flex items-center gap-1.5 font-medium",
                             saved
-                                ? "bg-green-100 text-green-700"
-                                : "bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40"
+                                ? "bg-[#edf4eb] text-[#3d6a3a]"
+                                : "bg-[#c96442] text-[#faf9f5] hover:bg-[#b85b3b] disabled:opacity-40 shadow-[#c96442_0_0_0_0,#c96442_0_0_0_1px]"
                         )}
                     >
                         {saving ? (
@@ -205,8 +205,8 @@ export function DiaryPanel() {
 
             {/* 历史日记列表 */}
             {diaries.length > 0 && (
-                <div className="border-t px-6 py-3 bg-slate-50/50 max-h-[200px] overflow-y-auto">
-                    <h3 className="text-xs font-medium text-slate-400 mb-2">历史日记</h3>
+                <div className="border-t border-[#f0eee6] px-6 py-3 bg-[#faf9f5] max-h-[200px] overflow-y-auto">
+                    <h3 className="text-xs font-medium text-[#87867f] mb-2">历史日记</h3>
                     <div className="space-y-1">
                         {diaries.map(d => (
                             <button
@@ -215,15 +215,15 @@ export function DiaryPanel() {
                                 className={cn(
                                     "w-full text-left px-3 py-2 rounded-lg text-xs transition-all flex items-center justify-between",
                                     d.date === currentDiaryDate
-                                        ? "bg-indigo-50 text-indigo-700 font-medium"
-                                        : "hover:bg-slate-100 text-slate-600"
+                                        ? "bg-[#f5ece8] text-[#c96442] font-medium"
+                                        : "hover:bg-[#f5f4ed] text-[#5e5d59]"
                                 )}
                             >
                                 <div className="flex items-center gap-2">
                                     <span>{d.date}</span>
                                     {d.mood && <span>{MOODS.find(m => m.label === d.mood)?.emoji}</span>}
                                 </div>
-                                <span className="text-[10px] text-slate-400 truncate max-w-[120px]">
+                                <span className="text-[10px] text-[#87867f] truncate max-w-[120px]">
                                     {d.content.slice(0, 20)}...
                                 </span>
                             </button>

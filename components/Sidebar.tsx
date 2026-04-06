@@ -132,11 +132,11 @@ export function Sidebar() {
     };
 
     return (
-        <div className="w-[300px] border-r h-full flex flex-col bg-slate-50/50">
+        <div className="w-[300px] border-r border-[#e8e6dc] h-full flex flex-col bg-[#faf9f5] text-[#141413]">
             {/* 顶部操作区 */}
             <div className="p-4 space-y-3">
                 <Button
-                    className="w-full justify-start gap-2 bg-indigo-600 hover:bg-indigo-700"
+                    className="w-full justify-start gap-2 bg-[#c96442] hover:bg-[#b85b3b] text-[#faf9f5] shadow-[#c96442_0_0_0_0,#c96442_0_0_0_1px]"
                     onClick={() => createSession()}
                 >
                     <Plus size={16} />
@@ -155,9 +155,9 @@ export function Sidebar() {
 
                 {/* 搜索框 */}
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#87867f]" size={14} />
                     <Input
-                        className="pl-9 h-9 bg-white text-xs rounded-xl border-slate-200 focus-visible:ring-indigo-500/30"
+                        className="pl-9 h-9 bg-[#faf9f5] text-xs rounded-xl border-[#e8e6dc] text-[#4d4c48]"
                         placeholder="搜索标题或内容..."
                         value={searchKeyword}
                         onChange={(e) => setSearchKeyword(e.target.value)}
@@ -167,7 +167,7 @@ export function Sidebar() {
 
             {/* 文件上传区域（可收起） */}
             {showUpload && (
-                <div className="px-4 py-3 border-b bg-slate-50/80">
+                <div className="px-4 py-3 border-b border-[#f0eee6] bg-[#f5f4ed]">
                     <FileUpload />
                 </div>
             )}
@@ -177,12 +177,12 @@ export function Sidebar() {
             {/* 分类管理区域 */}
             <div className="px-4 py-2">
                 <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xs font-medium text-muted-foreground">分类标签</h3>
+                    <h3 className="text-xs font-medium text-[#87867f]">分类标签</h3>
                     <div className="flex items-center gap-1">
                         {activeCategoryId && (
                             <button
                                 onClick={() => setCategoryFilter(null)}
-                                className="text-[10px] text-red-500 hover:underline"
+                                className="text-[10px] text-[#b53333] hover:underline"
                             >
                                 清除
                             </button>
@@ -192,7 +192,7 @@ export function Sidebar() {
                                 if (showCategoryForm) cancelForm();
                                 else { setShowCategoryForm(true); setTimeout(() => categoryInputRef.current?.focus(), 50); }
                             }}
-                            className="text-[10px] text-indigo-500 hover:underline"
+                            className="text-[10px] text-[#c96442] hover:underline"
                         >
                             {showCategoryForm ? "取消" : "+ 添加"}
                         </button>
@@ -201,7 +201,7 @@ export function Sidebar() {
 
                 {/* 分类创建/编辑表单 */}
                 {showCategoryForm && (
-                    <div className="mb-2 p-2 bg-white rounded-lg border space-y-2">
+                    <div className="mb-2 p-2 bg-[#f5f4ed] rounded-xl border border-[#f0eee6] space-y-2">
                         <Input
                             ref={categoryInputRef}
                             placeholder="分类名称"
@@ -217,7 +217,7 @@ export function Sidebar() {
                                     onClick={() => setCategoryColor(c)}
                                     className={cn(
                                         "w-5 h-5 rounded-full border-2 transition-all",
-                                        categoryColor === c ? "border-slate-800 scale-110" : "border-transparent"
+                                        categoryColor === c ? "border-[#141413] scale-110" : "border-transparent"
                                     )}
                                     style={{ backgroundColor: c }}
                                 />
@@ -245,7 +245,7 @@ export function Sidebar() {
                                     "px-2.5 py-1 text-xs rounded-full transition-all border flex items-center gap-1",
                                     activeCategoryId === cat.id
                                         ? "text-white border-transparent shadow-sm"
-                                        : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                                        : "bg-[#faf9f5] text-[#5e5d59] border-[#e8e6dc] hover:border-[#d1cfc5]"
                                 )}
                                 style={activeCategoryId === cat.id
                                     ? { backgroundColor: cat.color_code }
@@ -258,13 +258,13 @@ export function Sidebar() {
                             <div className="absolute -top-1 -right-1 hidden group-hover:flex gap-0.5">
                                 <button
                                     onClick={() => startEdit(cat)}
-                                    className="w-4 h-4 bg-white border rounded-full flex items-center justify-center text-slate-500 hover:text-indigo-600 shadow-sm"
+                                    className="w-4 h-4 bg-[#faf9f5] border border-[#e8e6dc] rounded-full flex items-center justify-center text-[#87867f] hover:text-[#c96442] shadow-sm"
                                 >
                                     <Pencil size={8} />
                                 </button>
                                 <button
                                     onClick={() => { if (confirm(`删除分类「${cat.name}」？`)) deleteCategory(cat.id); }}
-                                    className="w-4 h-4 bg-white border rounded-full flex items-center justify-center text-slate-500 hover:text-red-600 shadow-sm"
+                                    className="w-4 h-4 bg-[#faf9f5] border border-[#e8e6dc] rounded-full flex items-center justify-center text-[#87867f] hover:text-[#b53333] shadow-sm"
                                 >
                                     <X size={8} />
                                 </button>
@@ -272,7 +272,7 @@ export function Sidebar() {
                         </div>
                     ))}
                     {categories.length === 0 && !showCategoryForm && (
-                        <span className="text-[10px] text-slate-400">暂无分类，点击「+ 添加」创建</span>
+                        <span className="text-[10px] text-[#87867f]">暂无分类，点击「+ 添加」创建</span>
                     )}
                 </div>
             </div>
@@ -281,12 +281,12 @@ export function Sidebar() {
 
             {/* 会话列表标题 + 排序按钮 */}
             <div className="px-4 py-2 flex items-center justify-between">
-                <h3 className="text-xs font-medium text-muted-foreground">
+                <h3 className="text-xs font-medium text-[#87867f]">
                     对话记录 ({sortedSessions.length})
                 </h3>
                 <button
                     onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-                    className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-indigo-600 transition-colors px-1.5 py-0.5 rounded hover:bg-indigo-50"
+                    className="flex items-center gap-1 text-[10px] text-[#5e5d59] hover:text-[#c96442] transition-colors px-1.5 py-0.5 rounded hover:bg-[#f5ece8]"
                     title={sortOrder === 'desc' ? '当前：最新在前' : '当前：最早在前'}
                 >
                     <Calendar size={11} />
@@ -315,17 +315,17 @@ export function Sidebar() {
                                     variant={currentSessionId === session.id ? "secondary" : "ghost"}
                                     className={cn(
                                         "flex-1 min-w-0 justify-start font-normal h-auto py-2.5 text-left pl-3",
-                                        currentSessionId === session.id && "bg-white shadow-sm border"
+                                        currentSessionId === session.id && "bg-[#f5f4ed] shadow-sm border border-[#e8e6dc]"
                                     )}
                                     onClick={() => selectSession(session.id)}
                                 >
                                     <MessageSquare className="mr-3 h-4 w-4 opacity-70 shrink-0" />
                                     <span className="flex flex-col items-start overflow-hidden">
                                         <span className="flex items-center justify-between w-full gap-2">
-                                            <span className="truncate font-medium text-sm text-slate-700">
+                                            <span className="truncate font-medium text-sm text-[#3d3d3a]">
                                                 {session.title}
                                             </span>
-                                            <span className="text-[9px] text-slate-400 whitespace-nowrap shrink-0">
+                                            <span className="text-[9px] text-[#87867f] whitespace-nowrap shrink-0">
                                                 {formatDate(session.created_at)}
                                             </span>
                                         </span>
@@ -351,7 +351,7 @@ export function Sidebar() {
                                                 assigningSessionId === session.id ? null : session.id
                                             );
                                         }}
-                                        className="p-1.5 text-slate-400 hover:bg-indigo-100 hover:text-indigo-600 rounded transition-colors"
+                                        className="p-1.5 text-[#87867f] hover:bg-[#f5ece8] hover:text-[#c96442] rounded transition-colors"
                                         title="设置分类"
                                     >
                                         <Tag size={13} />
@@ -361,7 +361,7 @@ export function Sidebar() {
                                             e.stopPropagation();
                                             if (confirm("确定删除吗？")) deleteSession(session.id);
                                         }}
-                                        className="p-1.5 text-slate-400 hover:bg-red-100 hover:text-red-600 rounded transition-colors"
+                                        className="p-1.5 text-[#87867f] hover:bg-[#f8ecec] hover:text-[#b53333] rounded transition-colors"
                                         title="删除对话"
                                     >
                                         <Trash2 size={13} />
@@ -370,7 +370,7 @@ export function Sidebar() {
 
                                 {/* 分类选择下拉 */}
                                 {assigningSessionId === session.id && (
-                                    <div className="absolute right-0 top-full z-20 bg-white border rounded-lg shadow-lg p-1.5 min-w-[140px]">
+                                    <div className="absolute right-0 top-full z-20 bg-[#faf9f5] border border-[#f0eee6] rounded-xl shadow-[rgba(0,0,0,0.05)_0_4px_24px] p-1.5 min-w-[140px]">
                                         {categories.map(c => (
                                             <button
                                                 key={c.id}
@@ -379,8 +379,8 @@ export function Sidebar() {
                                                     setAssigningSessionId(null);
                                                 }}
                                                 className={cn(
-                                                    "w-full text-left px-2 py-1.5 text-xs rounded flex items-center gap-2 hover:bg-slate-50",
-                                                    session.category_id === c.id && "bg-indigo-50 text-indigo-700"
+                                                    "w-full text-left px-2 py-1.5 text-xs rounded flex items-center gap-2 hover:bg-[#f5f4ed]",
+                                                    session.category_id === c.id && "bg-[#f5ece8] text-[#c96442]"
                                                 )}
                                             >
                                                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color_code }} />
@@ -395,14 +395,14 @@ export function Sidebar() {
                                                         updateSessionCategory(session.id, null);
                                                         setAssigningSessionId(null);
                                                     }}
-                                                    className="w-full text-left px-2 py-1.5 text-xs rounded text-red-500 hover:bg-red-50"
+                                                    className="w-full text-left px-2 py-1.5 text-xs rounded text-[#b53333] hover:bg-[#f8ecec]"
                                                 >
                                                     清除分类
                                                 </button>
                                             </>
                                         )}
                                         {categories.length === 0 && (
-                                            <div className="px-2 py-1.5 text-[10px] text-slate-400">
+                                            <div className="px-2 py-1.5 text-[10px] text-[#87867f]">
                                                 请先创建分类
                                             </div>
                                         )}
@@ -414,13 +414,13 @@ export function Sidebar() {
                 </div>
             </ScrollArea>
 
-            <div className="p-4 border-t space-y-2">
+            <div className="p-4 border-t border-[#f0eee6] space-y-2">
                 <button
                     onClick={() => setShowUserModal(true)}
-                    className="w-full flex items-center gap-2 text-xs text-slate-500 bg-white border rounded-lg px-2.5 py-2 hover:bg-slate-50 transition-colors"
+                    className="w-full flex items-center gap-2 text-xs text-[#5e5d59] bg-[#faf9f5] border border-[#e8e6dc] rounded-xl px-2.5 py-2 hover:bg-[#f5f4ed] transition-colors"
                     title="用户管理"
                 >
-                    <Avatar className="h-6 w-6 border border-slate-200 shrink-0">
+                    <Avatar className="h-6 w-6 border border-[#e8e6dc] shrink-0">
                         <AvatarImage src={user?.avatar || undefined} alt="user-avatar" />
                         <AvatarFallback className="text-[10px]">
                             {(user?.username || "U").slice(0, 1).toUpperCase()}
@@ -433,7 +433,7 @@ export function Sidebar() {
                         logout();
                         router.replace('/login');
                     }}
-                    className="w-full flex items-center justify-center gap-1.5 text-xs py-2 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors"
+                    className="w-full flex items-center justify-center gap-1.5 text-xs py-2 rounded-xl border border-[#e8e6dc] hover:bg-[#f5f4ed] text-[#5e5d59] transition-colors"
                 >
                     <LogOut size={12} /> 退出登录
                 </button>
