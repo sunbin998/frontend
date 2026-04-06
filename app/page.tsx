@@ -10,6 +10,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Source } from "@/lib/types";
 import { useRouter } from "next/navigation";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // RAG 来源折叠组件
 function SourcesPanel({ sources }: { sources: Source[] }) {
@@ -54,7 +55,7 @@ export default function Home() {
   const {
     currentSessionId, sessions, messages, sendMessageStream,
     documents, fetchDocuments, selectedBooks, setSelectedBooks,
-    isAuthenticated, isAuthChecking, initAuth,
+    isAuthenticated, isAuthChecking, initAuth, user,
   } = useAppStore();
   const currentSession = sessions.find(s => s.id === currentSessionId);
 
@@ -297,9 +298,12 @@ export default function Home() {
                       </div>
 
                       {msg.role === 'user' && (
-                        <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center shrink-0">
-                          <User size={16} className="text-slate-500" />
-                        </div>
+                        <Avatar className="h-8 w-8 border border-slate-200 shrink-0">
+                          <AvatarImage src={user?.avatar || undefined} alt="user-avatar" />
+                          <AvatarFallback>
+                            <User size={14} className="text-slate-500" />
+                          </AvatarFallback>
+                        </Avatar>
                       )}
                     </div>
                   ))}

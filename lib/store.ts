@@ -24,6 +24,11 @@ interface AppState {
     initAuth: () => Promise<void>;
     login: (username: string, password: string) => Promise<void>;
     register: (username: string, password: string, email?: string) => Promise<void>;
+    refreshCurrentUser: () => Promise<void>;
+    updateProfile: (payload: { username?: string; email?: string | null; password?: string }) => Promise<void>;
+    uploadAvatar: (file: File) => Promise<void>;
+    removeAvatar: () => Promise<void>;
+    deleteAccount: () => Promise<void>;
     logout: () => void;
     fetchSessions: (keyword?: string, categoryId?: number) => Promise<void>;
     createSession: (title?: string) => Promise<void>;
@@ -92,6 +97,62 @@ export const useAppStore = create<AppState>((set, get) => ({
         });
         setAuthTokens(res.data.access_token, res.data.refresh_token);
         set({ user: res.data.user, isAuthenticated: true, isAuthChecking: false });
+    },
+
+    refreshCurrentUser: async () => {
+        const res = await api.get<User>('/auth/me');
+        set({ user: res.data, isAuthenticated: true, isAuthChecking: false });
+    },
+
+    updateProfile: async (payload) => {
+        const cleanPayload: { username?: string; email?: string | null; password?: string } = {};
+        if (typeof payload.username === 'string') {
+            const username = payload.username.trim();
+            if (username) cleanPayload.username = username;
+        }
+        if (payload.email !== undefined) {
+            const email = payload.email?.trim();
+            cleanPayload.email = email ? email : null;
+        }
+        if (payload.password) {
+            cleanPayload.password = payload.password;
+        }
+
+        const res = await api.put<User>('/auth/me', cleanPayload);
+        set({ user: res.data });
+    },
+
+    uploadAvatar: async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await api.post<User>('/auth/me/avatar', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        set({ user: res.data });
+    },
+
+    removeAvatar: async () => {
+        const res = await api.delete<User>('/auth/me/avatar');
+        set({ user: res.data });
+    },
+
+    deleteAccount: async () => {
+        await api.delete('/auth/me');
+        clearAuthTokens();
+        set({
+            user: null,
+            isAuthenticated: false,
+            isAuthChecking: false,
+            sessions: [],
+            categories: [],
+            activeCategoryId: null,
+            messages: [],
+            currentSessionId: null,
+            documents: [],
+            diaries: [],
+            selectedBooks: [],
+            currentDiaryDate: new Date().toISOString().slice(0, 10),
+        });
     },
 
     logout: () => {

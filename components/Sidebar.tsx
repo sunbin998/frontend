@@ -7,10 +7,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { MessageSquare, Plus, Trash2, BookOpen, Tag, X, Check, Pencil, ArrowUp, ArrowDown, Calendar, Search, LogOut, UserCircle2 } from "lucide-react";
+import { MessageSquare, Plus, Trash2, BookOpen, Tag, X, Check, Pencil, ArrowUp, ArrowDown, Calendar, Search, LogOut } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { FileUpload } from "@/components/FileUpload";
+import { UserProfileModal } from "@/components/UserProfileModal";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Session } from "@/lib/types";
 
 // 预设颜色
@@ -52,6 +54,7 @@ export function Sidebar() {
     } = useAppStore();
 
     const [showUpload, setShowUpload] = useState(false);
+    const [showUserModal, setShowUserModal] = useState(false);
 
     // 排序状态: 'desc' (最新在前) 或 'asc' (最早在前)
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
@@ -412,10 +415,19 @@ export function Sidebar() {
             </ScrollArea>
 
             <div className="p-4 border-t space-y-2">
-                <div className="flex items-center gap-2 text-xs text-slate-500 bg-white border rounded-lg px-2.5 py-2">
-                    <UserCircle2 size={14} className="text-indigo-500 shrink-0" />
+                <button
+                    onClick={() => setShowUserModal(true)}
+                    className="w-full flex items-center gap-2 text-xs text-slate-500 bg-white border rounded-lg px-2.5 py-2 hover:bg-slate-50 transition-colors"
+                    title="用户管理"
+                >
+                    <Avatar className="h-6 w-6 border border-slate-200 shrink-0">
+                        <AvatarImage src={user?.avatar || undefined} alt="user-avatar" />
+                        <AvatarFallback className="text-[10px]">
+                            {(user?.username || "U").slice(0, 1).toUpperCase()}
+                        </AvatarFallback>
+                    </Avatar>
                     <span className="truncate">{user?.username || "未登录用户"}</span>
-                </div>
+                </button>
                 <button
                     onClick={() => {
                         logout();
@@ -426,6 +438,8 @@ export function Sidebar() {
                     <LogOut size={12} /> 退出登录
                 </button>
             </div>
+
+            <UserProfileModal open={showUserModal} onClose={() => setShowUserModal(false)} />
         </div>
     );
 }
