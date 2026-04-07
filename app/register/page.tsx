@@ -30,7 +30,7 @@ export default function RegisterPage() {
 
     useEffect(() => {
         if (!isAuthChecking && isAuthenticated) {
-            router.replace("/");
+            router.replace("/workspace");
         }
     }, [isAuthChecking, isAuthenticated, router]);
 
@@ -57,7 +57,7 @@ export default function RegisterPage() {
 
         try {
             await register(username.trim(), password, email.trim() || undefined);
-            router.replace("/");
+            router.replace("/workspace");
         } catch (err: unknown) {
             setError(getErrorMessage(err));
         } finally {

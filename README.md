@@ -59,9 +59,10 @@ npm run smoke:isolation
 
 ## 路由
 
+- `/` 欢迎/产品介绍页（公开）
+- `/workspace` 主工作台（受保护）
 - `/login` 登录
 - `/register` 注册
-- `/` 主工作台（受保护）
 
 ## 常见问题
 

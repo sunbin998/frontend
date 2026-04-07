@@ -12,8 +12,10 @@ import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { FileUpload } from "@/components/FileUpload";
 import { UserProfileModal } from "@/components/UserProfileModal";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Session } from "@/lib/types";
+import type { Category } from "@/lib/types";
 
 // 预设颜色
 const PRESET_COLORS = [
@@ -67,6 +69,8 @@ export function Sidebar() {
 
     // 会话分类选择状态
     const [assigningSessionId, setAssigningSessionId] = useState<string | null>(null);
+    const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
+    const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
 
     // 会话搜索状态
     const [searchKeyword, setSearchKeyword] = useState("");
@@ -263,7 +267,7 @@ export function Sidebar() {
                                     <Pencil size={8} />
                                 </button>
                                 <button
-                                    onClick={() => { if (confirm(`删除分类「${cat.name}」？`)) deleteCategory(cat.id); }}
+                                    onClick={() => setCategoryToDelete(cat)}
                                     className="w-4 h-4 bg-[#faf9f5] border border-[#e8e6dc] rounded-full flex items-center justify-center text-[#87867f] hover:text-[#b53333] shadow-sm"
                                 >
                                     <X size={8} />
@@ -359,7 +363,7 @@ export function Sidebar() {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            if (confirm("确定删除吗？")) deleteSession(session.id);
+                                            setSessionToDelete(session);
                                         }}
                                         className="p-1.5 text-[#87867f] hover:bg-[#f8ecec] hover:text-[#b53333] rounded transition-colors"
                                         title="删除对话"
@@ -440,6 +444,36 @@ export function Sidebar() {
             </div>
 
             <UserProfileModal open={showUserModal} onClose={() => setShowUserModal(false)} />
+
+            <ConfirmDialog
+                open={!!sessionToDelete}
+                title="删除这条对话？"
+                description="删除后将无法恢复该会话中的全部消息。"
+                confirmText="删除"
+                onCancel={() => setSessionToDelete(null)}
+                onConfirm={() => {
+                    if (!sessionToDelete) return;
+                    deleteSession(sessionToDelete.id);
+                    setSessionToDelete(null);
+                }}
+            />
+
+            <ConfirmDialog
+                open={!!categoryToDelete}
+                title="删除这个分类？"
+                description={
+                    categoryToDelete
+                        ? `分类「${categoryToDelete.name}」会被移除，相关会话将变为未分类。`
+                        : ""
+                }
+                confirmText="删除"
+                onCancel={() => setCategoryToDelete(null)}
+                onConfirm={() => {
+                    if (!categoryToDelete) return;
+                    deleteCategory(categoryToDelete.id);
+                    setCategoryToDelete(null);
+                }}
+            />
         </div>
     );
 }

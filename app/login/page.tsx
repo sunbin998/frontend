@@ -28,7 +28,7 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (!isAuthChecking && isAuthenticated) {
-            router.replace("/");
+            router.replace("/workspace");
         }
     }, [isAuthChecking, isAuthenticated, router]);
 
@@ -44,7 +44,7 @@ export default function LoginPage() {
 
         try {
             await login(username.trim(), password);
-            router.replace("/");
+            router.replace("/workspace");
         } catch (err: unknown) {
             setError(getErrorMessage(err));
         } finally {

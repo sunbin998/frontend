@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Save, Trash2, ChevronLeft, ChevronRight, Check, Loader2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 const MOODS = [
     { emoji: "😊", label: "开心" },
@@ -25,6 +26,7 @@ export function DiaryPanel() {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
     // 加载日记列表
     useEffect(() => {
@@ -72,10 +74,10 @@ export function DiaryPanel() {
 
     // 删除日记
     const handleDelete = async () => {
-        if (!confirm(`确定删除 ${currentDiaryDate} 的日记吗？`)) return;
         await deleteDiary(currentDiaryDate);
         setContent("");
         setMood(null);
+        setConfirmDeleteOpen(false);
     };
 
     const currentDiary = diaries.find(d => d.date === currentDiaryDate);
@@ -175,7 +177,7 @@ export function DiaryPanel() {
                 <div className="flex items-center gap-2">
                     {currentDiary && (
                         <button
-                            onClick={handleDelete}
+                            onClick={() => setConfirmDeleteOpen(true)}
                             className="px-3 py-1.5 text-xs text-[#b53333] hover:bg-[#f8ecec] rounded-lg transition-colors flex items-center gap-1"
                         >
                             <Trash2 size={12} /> 删除
@@ -231,6 +233,15 @@ export function DiaryPanel() {
                     </div>
                 </div>
             )}
+
+            <ConfirmDialog
+                open={confirmDeleteOpen}
+                title="删除这篇日记？"
+                description={`将永久删除 ${currentDiaryDate} 的日记内容，且无法恢复。`}
+                confirmText="删除"
+                onCancel={() => setConfirmDeleteOpen(false)}
+                onConfirm={handleDelete}
+            />
         </div>
     );
 }

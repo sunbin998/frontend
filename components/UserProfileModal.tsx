@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAppStore } from "@/lib/store";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 type Props = {
     open: boolean;
@@ -34,6 +35,7 @@ export function UserProfileModal({ open, onClose }: Props) {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
     useEffect(() => {
         if (open) {
@@ -99,9 +101,7 @@ export function UserProfileModal({ open, onClose }: Props) {
     };
 
     const handleDeleteAccount = async () => {
-        const confirmed = window.confirm("确认删除当前账号？此操作不可恢复。\n你的会话、日记、分类和文档都会被删除。");
-        if (!confirmed) return;
-
+        setConfirmDeleteOpen(false);
         setLoading(true);
         setError(null);
         setMessage(null);
@@ -181,12 +181,21 @@ export function UserProfileModal({ open, onClose }: Props) {
                     <Button
                         variant="outline"
                         className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                        onClick={handleDeleteAccount}
+                        onClick={() => setConfirmDeleteOpen(true)}
                         disabled={loading}
                     >
                         删除账号（危险操作）
                     </Button>
                 </div>
+
+                <ConfirmDialog
+                    open={confirmDeleteOpen}
+                    title="确认删除当前账号？"
+                    description="此操作不可恢复。你的会话、日记、分类和知识库文档都会被永久删除。"
+                    confirmText="永久删除"
+                    onCancel={() => setConfirmDeleteOpen(false)}
+                    onConfirm={handleDeleteAccount}
+                />
             </div>
         </div>
     );

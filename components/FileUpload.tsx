@@ -5,6 +5,7 @@ import { useState, useRef } from "react";
 import { useAppStore } from "@/lib/store";
 import { Upload, X, FileText, Trash2, Loader2, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 const ACCEPTED_EXTENSIONS = [".pdf", ".epub", ".mobi", ".azw", ".azw3", ".txt", ".md"];
 
@@ -13,6 +14,7 @@ export function FileUpload() {
     const [isDragging, setIsDragging] = useState(false);
     const [uploadStatus, setUploadStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [fileToDelete, setFileToDelete] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     // 拖拽事件处理
@@ -166,9 +168,7 @@ export function FileUpload() {
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (confirm(`确定删除 ${doc.filename}？`)) {
-                                        deleteDocument(doc.filename);
-                                    }
+                                    setFileToDelete(doc.filename);
                                 }}
                                 className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 hover:text-red-600 rounded transition-opacity"
                             >
@@ -178,6 +178,19 @@ export function FileUpload() {
                     ))}
                 </div>
             )}
+
+            <ConfirmDialog
+                open={!!fileToDelete}
+                title="删除这个知识库文件？"
+                description={fileToDelete ? `文件「${fileToDelete}」的切片与向量将被永久删除。` : ""}
+                confirmText="删除"
+                onCancel={() => setFileToDelete(null)}
+                onConfirm={() => {
+                    if (!fileToDelete) return;
+                    deleteDocument(fileToDelete);
+                    setFileToDelete(null);
+                }}
+            />
         </div>
     );
 }
