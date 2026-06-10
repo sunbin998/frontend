@@ -4,10 +4,15 @@ import api from './api';
 import { clearAuthTokens, ensureValidAccessToken, setAuthTokens } from './auth';
 import { Session, Category, Message, DocumentInfo, DiaryEntry, User, AuthResponse, Source } from './types';
 
+const STREAM_TYPE_INTERVAL_MS = 14;
+
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 interface AppState {
     user: User | null;
     isAuthenticated: boolean;
     isAuthChecking: boolean;
+    isAssistantThinking: boolean;
     // 数据状态
     sessions: Session[];
     categories: Category[];
@@ -50,13 +55,14 @@ interface AppState {
     saveDiary: (date: string, content: string, mood?: string, tags?: string[]) => Promise<void>;
     deleteDiary: (date: string) => Promise<void>;
     setDiaryDate: (date: string) => void;
-    setSelectedBooks: (books: string[]) => void;
+    setSelectedBooks: (books: string[] | ((prev: string[]) => string[])) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
     user: null,
     isAuthenticated: false,
     isAuthChecking: true,
+    isAssistantThinking: false,
     sessions: [],
     categories: [],
     activeCategoryId: null,
@@ -143,6 +149,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             user: null,
             isAuthenticated: false,
             isAuthChecking: false,
+            isAssistantThinking: false,
             sessions: [],
             categories: [],
             activeCategoryId: null,
@@ -161,6 +168,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             user: null,
             isAuthenticated: false,
             isAuthChecking: false,
+            isAssistantThinking: false,
             sessions: [],
             categories: [],
             activeCategoryId: null,
@@ -195,11 +203,21 @@ export const useAppStore = create<AppState>((set, get) => ({
             const res = await api.post<Session>("/sessions/", { title });
             const newSession = res.data;
 
+            const sessionDate = newSession.created_at
+                ? new Date(newSession.created_at).toISOString().slice(0, 10)
+                : new Date().toISOString().slice(0, 10);
+
             // 2. 乐观更新：直接把新会话加到列表头部，并自动选中
             set((state) => ({
                 sessions: [newSession, ...state.sessions],
-                currentSessionId: newSession.id
+                currentSessionId: newSession.id,
+                currentDiaryDate: sessionDate,
+                messages: [],
+                isAssistantThinking: false,
             }));
+
+            // 3. 立即拉取新会话消息（包含后端自动写入的欢迎语）
+            await get().fetchMessages(newSession.id);
         } catch (error) {
             console.error("Failed to create session", error);
         }
@@ -212,7 +230,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             ? new Date(session.created_at).toISOString().slice(0, 10)
             : new Date().toISOString().slice(0, 10);
 
-        set({ currentSessionId: id, currentDiaryDate: sessionDate });
+        set({ currentSessionId: id, currentDiaryDate: sessionDate, isAssistantThinking: false });
         get().fetchMessages(id);
     },
 
@@ -231,7 +249,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     fetchMessages: async (sessionId) => {
         // 切换会话时，先清空旧消息，防止闪烁
-        set({ messages: [] });
+        set({ messages: [], isAssistantThinking: false });
         try {
             const res = await api.get<Message[]>(`/chat/messages?session_id=${sessionId}`);
             set({ messages: res.data });
@@ -334,8 +352,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     sendMessageStream: async (content) => {
         const { currentSessionId, messages } = get();
         if (!currentSessionId) return;
-        const accessToken = await ensureValidAccessToken();
-        if (!accessToken) return;
 
         // 1. 乐观更新：用户消息立即上屏
         const tempUserMsg: Message = {
@@ -354,9 +370,15 @@ export const useAppStore = create<AppState>((set, get) => ({
             created_at: new Date().toISOString()
         };
 
-        set({ messages: [...messages, tempUserMsg, tempAiMsg] });
+        set({ messages: [...messages, tempUserMsg, tempAiMsg], isAssistantThinking: true });
 
         try {
+            const accessToken = await ensureValidAccessToken();
+            if (!accessToken) {
+                set({ isAssistantThinking: false });
+                return;
+            }
+
             // 3. 使用原生 fetch 发起流式请求
             // 注意：这里需要完整的 URL，因为 fetch 不像 axios 自动走 base URL 配置
             // 但因为我们配置了 next.config.ts 的 proxy，所以可以直接写 /api/...
@@ -379,8 +401,32 @@ export const useAppStore = create<AppState>((set, get) => ({
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let aiContent = "";
+            let renderedAiContent = "";
             let pendingSources: Source[] = [];
             let sseBuffer = ""; // 缓冲区：处理跨 chunk 的大型 SSE 事件
+            const renderAssistantText = async (text: string) => {
+                if (!text) return;
+
+                set({ isAssistantThinking: false });
+
+                for (const char of Array.from(text)) {
+                    renderedAiContent += char;
+
+                    set((state) => {
+                        const newMessages = [...state.messages];
+                        const lastMsgIndex = newMessages.findIndex(m => m.id === tempAiMsgId);
+                        if (lastMsgIndex !== -1) {
+                            newMessages[lastMsgIndex] = {
+                                ...newMessages[lastMsgIndex],
+                                content: renderedAiContent
+                            };
+                        }
+                        return { messages: newMessages };
+                    });
+
+                    await wait(STREAM_TYPE_INTERVAL_MS);
+                }
+            };
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -428,7 +474,10 @@ export const useAppStore = create<AppState>((set, get) => ({
                     // 处理普通 data 事件
                     if (event.startsWith('data: ')) {
                         const data = event.slice(6);
-                        if (data === '[DONE]') break;
+                        if (data === '[DONE]') {
+                            set({ isAssistantThinking: false });
+                            break;
+                        }
 
                         // 后端用 JSON 编码了 token（保留换行符等特殊字符）
                         try {
@@ -439,26 +488,18 @@ export const useAppStore = create<AppState>((set, get) => ({
                             aiContent += data;
                         }
 
-                        // 5. 实时更新 Store 中的最后一条消息 (AI 消息)
-                        set((state) => {
-                            const newMessages = [...state.messages];
-                            const lastMsgIndex = newMessages.findIndex(m => m.id === tempAiMsgId);
-                            if (lastMsgIndex !== -1) {
-                                newMessages[lastMsgIndex] = {
-                                    ...newMessages[lastMsgIndex],
-                                    content: aiContent
-                                };
-                            }
-                            return { messages: newMessages };
-                        });
+                        // 5. 逐字写入 Store，避免大 chunk 被 React 合并成整段突然出现
+                        await renderAssistantText(aiContent.slice(renderedAiContent.length));
                     }
                 }
             }
 
             // 流结束，刷新会话列表(更新时间)
+            set({ isAssistantThinking: false });
             get().fetchSessions();
 
         } catch (error) {
+            set({ isAssistantThinking: false });
             console.error("流式发送失败", error);
             // 生产环境应该在这里处理错误回滚
         }
@@ -512,7 +553,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     currentDiaryDate: new Date().toISOString().slice(0, 10),
     selectedBooks: [],
 
-    setSelectedBooks: (books: string[]) => {
+    setSelectedBooks: (books) => {
+        if (typeof books === 'function') {
+            set((state) => ({ selectedBooks: books(state.selectedBooks) }));
+            return;
+        }
         set({ selectedBooks: books });
     },
 

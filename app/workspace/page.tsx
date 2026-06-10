@@ -66,6 +66,53 @@ function SourcesPanel({ sources }: { sources: Source[] }) {
   );
 }
 
+const THINKING_SPOKES = Array.from({ length: 10 }, (_, index) => ({
+  rotation: index * 36,
+  animationDelay: `${index * 70}ms`,
+}));
+
+function ThinkingIndicator() {
+  return (
+    <div className="thinking-indicator" role="status" aria-label="正在思考">
+      <svg
+        className="thinking-indicator__mark"
+        viewBox="-18 -18 36 36"
+        aria-hidden="true"
+      >
+        {THINKING_SPOKES.map((spoke, index) => (
+          <rect
+            key={index}
+            className="thinking-indicator__spoke"
+            x="-1.8"
+            y="-16"
+            width="3.6"
+            height="12"
+            rx="1.8"
+            fill="#d97757"
+            opacity="0.72"
+            transform={`rotate(${spoke.rotation})`}
+            style={{ animationDelay: spoke.animationDelay }}
+          />
+        ))}
+      </svg>
+      <span className="sr-only">正在思考</span>
+    </div>
+  );
+}
+
+function AssistantThinkingMessage() {
+  return (
+    <div className="flex w-full gap-3 justify-start">
+      <div className="w-8 h-8 bg-[#30302e] border border-[#30302e] rounded-full flex items-center justify-center shrink-0">
+        <Bot size={16} className="text-[#faf9f5]" />
+      </div>
+      <div className="max-w-[82%] px-4 py-3 rounded-2xl text-sm leading-relaxed bg-[#faf9f5] border border-[#f0eee6] text-[#4d4c48] rounded-tl-md">
+        <ThinkingIndicator />
+      </div>
+    </div>
+  );
+}
+
 type ViewMode = "chat" | "diary";
 
 export default function Home() {
@@ -83,6 +130,7 @@ export default function Home() {
     isAuthChecking,
     initAuth,
     user,
+    isAssistantThinking,
   } = useAppStore();
 
   const currentSession = sessions.find((s) => s.id === currentSessionId);
@@ -113,7 +161,7 @@ export default function Home() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isAssistantThinking]);
 
   const handleSend = () => {
     if (!inputContent.trim()) return;
@@ -215,7 +263,12 @@ export default function Home() {
                     </div>
                   )}
 
-                  {messages.map((msg) => (
+                  {messages.map((msg) => {
+                    if (isAssistantThinking && msg.role === "assistant" && !msg.content) {
+                      return null;
+                    }
+
+                    return (
                     <div
                       key={msg.id}
                       className={cn(
@@ -238,12 +291,16 @@ export default function Home() {
                         )}
                       >
                         {msg.role === "assistant" ? (
-                          <div className="prose prose-sm max-w-none prose-p:my-1.5 prose-li:my-0.5 prose-strong:text-[#3d3d3a]">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                              {msg.content}
-                            </ReactMarkdown>
-                            <SourcesPanel sources={msg.sources || []} />
-                          </div>
+                          msg.content ? (
+                            <div className="prose prose-sm max-w-none prose-p:my-1.5 prose-li:my-0.5 prose-strong:text-[#3d3d3a]">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {msg.content}
+                              </ReactMarkdown>
+                              <SourcesPanel sources={msg.sources || []} />
+                            </div>
+                          ) : (
+                            <ThinkingIndicator />
+                          )
                         ) : (
                           <span className="whitespace-pre-wrap">{msg.content}</span>
                         )}
@@ -258,7 +315,10 @@ export default function Home() {
                         </Avatar>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
+
+                  {isAssistantThinking && <AssistantThinkingMessage />}
                 </div>
 
                 <div className="p-4 border-t border-[#e8e6dc] bg-[#f5f4ed] relative">
@@ -269,6 +329,7 @@ export default function Home() {
                           选择检索知识库范围
                         </span>
                         <button
+                          type="button"
                           className="text-xs text-[#c96442] hover:text-[#d97757]"
                           onClick={() => setSelectedBooks([])}
                         >
@@ -287,6 +348,7 @@ export default function Home() {
                               selectedBooks.includes(doc.filename);
                             return (
                               <button
+                                type="button"
                                 key={doc.filename}
                                 className={cn(
                                   "w-full flex items-center justify-between text-left p-2 rounded-lg text-xs transition-colors",
@@ -295,15 +357,24 @@ export default function Home() {
                                     : "hover:bg-[#f5f4ed] text-[#5e5d59]"
                                 )}
                                 onClick={() => {
-                                  let newBooks = [...selectedBooks];
-                                  if (selectedBooks.length === 0) {
-                                    newBooks = [doc.filename];
-                                  } else if (selectedBooks.includes(doc.filename)) {
-                                    newBooks = newBooks.filter((b) => b !== doc.filename);
-                                  } else {
-                                    newBooks.push(doc.filename);
-                                  }
-                                  setSelectedBooks(newBooks);
+                                  setSelectedBooks((prevBooks) => {
+                                    let newBooks = [...prevBooks];
+
+                                    if (prevBooks.length === 0) {
+                                      // 从“全选”状态点击某一项，切换为“全选-该项”
+                                      return documents
+                                        .map((item) => item.filename)
+                                        .filter((name) => name !== doc.filename);
+                                    }
+
+                                    if (prevBooks.includes(doc.filename)) {
+                                      newBooks = newBooks.filter((b) => b !== doc.filename);
+                                    } else {
+                                      newBooks.push(doc.filename);
+                                    }
+
+                                    return newBooks;
+                                  });
                                 }}
                               >
                                 <span className="truncate pr-2">{doc.filename}</span>
@@ -318,6 +389,7 @@ export default function Home() {
 
                   <div className="flex gap-2 max-w-4xl mx-auto items-end">
                     <button
+                      type="button"
                       className={cn(
                         "w-10 h-10 rounded-full flex items-center justify-center transition-colors shrink-0 border",
                         selectedBooks.length > 0 && selectedBooks.length < documents.length
